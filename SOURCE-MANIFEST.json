@@ -16,8 +16,8 @@
   "files": {
     "engine/API.md": "bea7ba8634ef36dd4f0d69acfc6261fc9467c00953d5fcc53d8d25b0608667ad",
     "engine/LICENSE.txt": "afca41723b45e26069f68d485bf906a202f892f90c801d3052f8e6296bb41454",
-    "engine/NOTICE.md": "41aede92dd22679ba1b8cb8c71848418bc3ab806a908de07bfbb392d951b1f3b",
-    "engine/README.md": "6e638959226730d35ac9b5998577735bbdacec74894055c8a7819d0d968c76c2",
+    "engine/NOTICE.md": "edc9ece97efb91241425a5e00b3bb44955151e68122d2580ff3a607b12c45355",
+    "engine/README.md": "a983c74168af598382550b69b874122ee79c5cb0547e284c6ae035b18134d658",
     "engine/adapters.py": "4c22023aab9dc987b357a613739cc1232b7615b212d809d8e8d1ab89bac22334",
     "engine/asset_paths.py": "e7cd938f6a8ca55c4d24a7000625a8a492e492aa6c31f29b7779a9c923025ab7",
     "engine/babel_adapter.py": "bfd25d1ea7b17e25c5146b00f7ed21831860ba4eb29d919a9e1e3038eb4b503a",
@@ -295,15 +295,16 @@
     "licenses/upstream/sources.json": "a0ae80dade6758e233e0f43b4b68cce976eb8488dfd39e98b61a1c7f31a94fd9",
     "licenses/uv/LICENSE-APACHE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
     "licenses/uv/LICENSE-MIT": "860e3d7a86b84e6a7012c7a635fc64df475cebc6cce34dfeb73a5982ec58176c",
-    "THIRD-PARTY-NOTICES.md": "594c16baa366d222e0fcd154c1a641d8855c08a9c45b90032a23f2465d1d3efc",
-    "DOCUMENTATION.zh-CN.md": "1386e54ba9ce153b880c6bbee22a3abf9554e28f86d2c3738aed375596ddc0b1",
+    "THIRD-PARTY-NOTICES.md": "e79becfc3827cf70d8fd28fe5d2d66fba8ca3bc4b044792713dfb83fc415db08",
+    "DOCUMENTATION.md": "43024f3b4df73fd12060c8979257cc539d9ea6a2bfa5c266dd3d2555714ab1cc",
+    "DOCUMENTATION.zh-CN.md": "43024f3b4df73fd12060c8979257cc539d9ea6a2bfa5c266dd3d2555714ab1cc",
     "licenses/frontend/ONNX-Runtime-Web-LICENSE-MIT": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
     "licenses/frontend/ONNX-Runtime-Web-NOTICE.md": "cca98c597f27aeb31a5c6203c6320cf26ec6cf159502462ee37a4741d205fe75",
     "runtime_probe.py": "3dae9599f75db0be9ff16b6994d59d55821c8a8fabe5728c2c4eaffca6200f71",
-    "build_engine_source.py": "0429e14c87fe4629509f5660f38e79e69f0157be6a2ad49523ffa8c53553a99c",
+    "build_engine_source.py": "f51b46c4615313b00b76a1c5f0c412d6fd4aade064da645c4b22afd8d3c73c55",
     "engine/source-distribution.json": "d4dd450c9afe0fd0e75f579b82d3a5cc7caa46a04ea8d94c39404485e4aaf9b4",
     "LICENSE.txt": "afca41723b45e26069f68d485bf906a202f892f90c801d3052f8e6296bb41454",
     ".gitignore": "6e8c851dbf2987348b671708305b31255c8d12f2915069025fd32504f1eb03ef",
-    "README.md": "9f973db6c295a7a086959c04fe416b79482d2d135f1c7af13623129913e40e52"
+    "README.md": "ed34cfa035a4c5b3c6833faf43a26ffb8362e47d0ec6c3b6220e04c032bf7131"
   }
 }

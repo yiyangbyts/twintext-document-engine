@@ -2,10 +2,8 @@
 
 Copyright (C) 2026 TwinText. The engine's first-party source is licensed under
 AGPL-3.0-only; see LICENSE.txt. The bundled runtime probe and engine source builder are covered by the same license. Upstream software retains its original licenses.
-This directory is an independently runnable BabelDOC 0.6.4 adaptation. It does
-not import Zotero, the TwinText UI, account system, activation or provider manager.
-Reference/list/contents geometry, ignored regions, rotations, native previews,
-reflow and recovery execute inside the engine process.
+This is a standalone BabelDOC 0.6.4 adaptation with reference/list/contents
+preservation, rotated-page handling, paragraph previews, reflow and recovery.
 
 ## Install and run
 
@@ -51,10 +49,8 @@ https://github.com/yiyangbyts/twintext-document-engine/releases. The installed
 source-distribution.json identifies the exact release and archive for that version;
 /v1/source redirects there without a TwinText account or activation.
 
-The source archive includes the engine, tests, interface definition, constraints,
-asset hashes, runtime probe, source archive builder and referenced license materials.
-The client source is outside this archive. Its builder uses an explicit file allowlist;
-repository history, credentials, server/account code and client sources are excluded.
+The source archive includes the engine, interface, dependency constraints,
+asset hashes, runtime probe, source builder, tests and referenced license materials.
 
 Pinned core upstream sources:
 - https://github.com/funstory-ai/BabelDOC/tree/v0.6.4
@@ -67,8 +63,5 @@ upstream source distributions. `fetch_sources.py` can download them directly,
 without executing or extracting them, verifying upstream-sources.json sizes and
 SHA-256 digests. Checksums accompany the GitHub release assets.
 
-The exact dependency/asset inventory is in licenses/runtime/inventory.json in the
-source package. Native-library and Python-build-standalone corresponding-source
-scope and commercial distribution remain subject to the recorded distribution
-review. An independently runnable process does not itself certify proprietary
-license compatibility. Do not treat the engineering archive as that certification.
+The exact dependency and asset inventory, with original license and copyright
+materials, is in licenses/runtime/inventory.json in the source package.

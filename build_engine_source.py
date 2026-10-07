@@ -72,8 +72,10 @@ def source_files(root=ROOT):
         if not name.startswith('licenses/') or '..' in Path(name).parts:
             raise ValueError('Unsafe license path')
         files[name] = read_public(root, name)
-    for name, target in [('THIRD-PARTY-NOTICES.md', 'THIRD-PARTY-NOTICES.md'),
-                         ('docs/PUBLIC-DOCUMENTATION.zh-CN.md', 'DOCUMENTATION.zh-CN.md'),
+    for name, target in [('docs/PUBLIC-THIRD-PARTY-NOTICES.md', 'THIRD-PARTY-NOTICES.md'),
+                         ('docs/PUBLIC-DOCUMENTATION.md', 'DOCUMENTATION.md'),
+                         # Preserve the URL used by existing installed clients.
+                         ('docs/PUBLIC-DOCUMENTATION.md', 'DOCUMENTATION.zh-CN.md'),
                          ('vendor/onnxruntime-web-1.30.0/LICENSE-MIT', 'licenses/frontend/ONNX-Runtime-Web-LICENSE-MIT'),
                          ('vendor/onnxruntime-web-1.30.0/NOTICE.md', 'licenses/frontend/ONNX-Runtime-Web-NOTICE.md'),
                          ('engines/installer/runtime_probe.py', 'runtime_probe.py'),
@@ -86,28 +88,27 @@ def source_files(root=ROOT):
     files['.gitignore'] = b'__pycache__/\n*.pyc\n.venv/\nassets/\nmodel/\nupstream-source/\n.env\n*.pdf\n*.part\n'
     files['README.md'] = f'''# TwinText Document Engine
 
-Source snapshot for TwinText {version}. This repository publishes the independently
-runnable document engine, its modifications, public HTTP/CLI interface, tests,
-dependency constraints and necessary installation/source-building materials.
+TwinText adapts BabelDOC to translate PDFs while preserving their structure.
+It addresses mixed text and formulas, reference formatting, numbered lists,
+tables of contents and rotated pages.
 
-中文使用说明、版权与许可及源码下载：[GitHub 文档（中文）](DOCUMENTATION.zh-CN.md)。
+- Preserve native PDF layout and mathematical content.
+- Show available paragraph previews while translation continues.
+- Support translation retries and recovery of failed pages.
+- Run independently through a CLI or HTTP interface with compatible providers.
 
-The engine's TwinText-authored code, runtime probe and source builder are provided
-under AGPL-3.0-only. Third-party code and resources retain their original licenses.
-See LICENSE.txt, engine/NOTICE.md and licenses/runtime/inventory.json.
+Source snapshot for TwinText {version}. Copyright (C) 2026 TwinText, for TwinText
+modifications, licensed under [AGPL-3.0-only](LICENSE.txt). You may use, modify and
+redistribute this code under that license. Third-party components retain their
+original copyrights and licenses. Provided without warranty except as required
+by law or separately agreed.
 
-Installation, translation and testing: [engine/README.md](engine/README.md).
-API: [engine/API.md](engine/API.md).
-Versioned source archives and pinned upstream sources: [{version} release]({source_delivery(version)['release']}).
-Download the engine source ZIP and twintext-upstream-sources.zip from that release;
-the latter includes BabelDOC, PyMuPDF, MuPDF and Levenshtein sources with hashes.
-No TwinText account or activation is required to run the independent engine.
+[Documentation](DOCUMENTATION.md) · [Third-party notices](THIRD-PARTY-NOTICES.md) ·
+[Changes](engine/NOTICE.md) · [Build and run](engine/README.md) ·
+[Source downloads]({source_delivery(version)['release']})
 
-This snapshot is exported using a reviewed file allowlist. It does not contain
-the proprietary Zotero client, account/activation server, website, credentials,
-customer documents or the private product repository's Git history.
-Publishing this engineering snapshot does not determine the full legal scope
-of a combined work or certify commercial distribution of every runtime payload.
+Versioned source and pinned core upstream archives are available without payment
+or activation. Checksums accompany the release assets.
 '''.encode()
     files['SOURCE-MANIFEST.json'] = (json.dumps(dict(schema=1, version=version,
         engine='twintext-document-engine', protocol=5, license='AGPL-3.0-only',
