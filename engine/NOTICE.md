@@ -1,0 +1,9 @@
+# BabelDOC adapter provenance and changes
+
+Upstream: https://github.com/funstory-ai/BabelDOC/tree/v0.6.4. BabelDOC 0.6.4 uses AGPL-3.0. Its vendored pdfminer retains its own MIT license. Runtime PyMuPDF/MuPDF and all other dependencies retain their applicable licenses; see the exact platform inventory in `licenses/runtime/inventory.json` and `THIRD-PARTY-NOTICES.md`.
+
+TwinText adapter modifications, through 2026-10-07: complete native PDF translation/reconstruction; runtime compatibility and temporary workspace patches; reference, list and contents preservation; rotated-page geometry; native paragraph previews and typography reflow; ignored/preserved source regions; bridge retries, cancellation, page recovery and artifact lifetime. The patches execute inside the Python process and include upstream-class subclasses/monkeypatches. Preserving the installed wheel bytes does not establish that the combined program is unmodified or exempt from AGPL obligations.
+
+The current adapter is BabelDOC-only. Adapter code needed to run the engine and this notice ship with the XPI; versioned source distributions are offered at https://github.com/yiyangbyts/twintext-document-engine/releases. Publication does not by itself settle the complete corresponding-source scope or authorize proprietary commercial distribution; distribution review remains pending.
+
+TwinText engine-owned source in this directory, including structure planning and standalone HTTP/CLI translation adapters, is offered under AGPL-3.0-only. Protocol 5 removes all client structure-analysis callbacks. The engine now derives reference/list/contents and ignored-region plans from native source glyphs and runs without a Zotero client. Client UI/account/provider selection code is outside the engine source archive. This technical boundary is not a determination of the full legal covered-work scope.

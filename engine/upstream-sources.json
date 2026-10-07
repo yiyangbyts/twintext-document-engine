@@ -1,0 +1,34 @@
+[
+  {
+    "name": "babeldoc",
+    "version": "0.6.4",
+    "file": "babeldoc-0.6.4.tar.gz",
+    "bytes": 16415074,
+    "sha256": "dbd2a69ccaf6678c34089f8c422a38a0fa170f5fa88ee1313b4235103421a875",
+    "url": "https://files.pythonhosted.org/packages/a8/6b/96925501ac8d8b22bcbddd3a8baebe53575e37cd1f82ba634b95000d0bfe/babeldoc-0.6.4.tar.gz"
+  },
+  {
+    "name": "pymupdf",
+    "version": "1.28.2",
+    "file": "pymupdf-1.28.2.tar.gz",
+    "bytes": 87903557,
+    "sha256": "5e0be7908a715aa20333caddd73f1d6f01e4cd0c26e869fa2dd0b7f344da2249",
+    "url": "https://files.pythonhosted.org/packages/a3/fb/b6761fa2d5266f2cdb24c3b91f4023070ab7848381417678e7a289a1d52a/pymupdf-1.28.2.tar.gz"
+  },
+  {
+    "name": "Levenshtein",
+    "version": "0.27.5",
+    "file": "levenshtein-0.27.5.tar.gz",
+    "bytes": 402914,
+    "sha256": "22021caf5867a46fae5ab927bbdcb430599d7e5ee3898449cbbe430ff07b7d08",
+    "url": "https://files.pythonhosted.org/packages/81/ab/d55fdebfdee7605df174913708d44f75dfec0ec5e4e5fd8e978bb88897eb/levenshtein-0.27.5.tar.gz"
+  },
+  {
+    "name": "MuPDF",
+    "version": "1.28.2",
+    "file": "mupdf-1.28.2-source.tar.gz",
+    "bytes": 68898646,
+    "sha256": "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156",
+    "url": "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz"
+  }
+]

@@ -1,0 +1,2 @@
+babeldoc==0.6.4
+packaging==26.0
