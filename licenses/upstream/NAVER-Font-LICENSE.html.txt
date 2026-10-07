@@ -1,0 +1,472 @@
+
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="Content-Script-Type" content="text/javascript">
+    <meta http-equiv="Content-Style-Type" content="text/css">
+    <title>네이버 글꼴 모음</title>
+    <meta property="og:url" content="https://hangeul.naver.com/font"/>
+    <meta property="og:title" content="네이버 글꼴 모음"/>
+    <meta property="og:description" content="네이버가 만든 150여종의 글꼴을 한번에 만나보세요"/>
+    <meta property="og:image" content="https://hangeul.naver.com/img/fonts/og.png"/>
+    <meta property="og:type" content="article"/>
+    <link rel="stylesheet" type="text/css" href="/css/assorted_font_2021.css?34">
+    <link rel="stylesheet" type="text/css" href="/css/fonts.css?5">
+    <link rel="stylesheet" type="text/css" href="/css/swiper.min.css">
+    <link href="https://hangeul.pstatic.net/hangeul_static/css/NanumSeongSirCe.css" rel="stylesheet">
+</head>
+<body>
+<!-- [D] 메뉴 오픈시 assorted-font 에 addclass 'on'-->
+<div id="wrap" class="assorted-font main on">
+    <div id="skip"><a href="#content"><span>본문 영역으로 바로가기</span></a></div>
+
+    <!-- header -->
+    
+<div class="header">
+	<div class="header_ct">
+		<h1>
+			<a href="https://www.naver.com/" class="logo_naver"><span class="blind">NAVER</span></a>
+			<a href="/" class="logo_ganguel"><span class="blind">네이버 한글한글 아름답게</span></a>
+		</h1>
+		<button type="button" class="btn_gnb">목차<span class="blind">열기/닫기</span>
+			<div class="bar_box">
+				<div class="bar_01"></div>
+				<div class="bar_02"></div>
+				<div class="bar_03"></div>
+			</div>
+		</button>
+	</div>
+	<div class="gnb_list_box">
+		<strong class="blind">목차</strong>
+		<ul class="gnb_list">
+			<li>
+				<a href="/font" class="gnb_link link_01">글꼴모음</a>
+			</li>
+			<li>
+				<a href="/2026" class="gnb_link link_02">올해의 캠페인</a>
+			</li>
+			<li>
+				<!-- [D] 클릭시.sub_menu_area에 .open 클래스 추가해주세요 -->
+				<a role="button" class="gnb_link link_04" style="cursor: pointer">마루부리</a>
+			</li>
+			<li>
+				<a href="/document" class="gnb_link link_05">한글문서</a>
+			</li>
+			<li>
+				<a href="/history" class="gnb_link link_06">걸어온길</a>
+			</li>
+		</ul>
+		<div class="sub_menu_area" >
+			<div class="sub_menu_scroll">
+				<ul class="sub_menu" style="overflow: scroll">
+					<li><a href="/maruproject_1" class="sub_link link_01">2018</a></li>
+					<li><a href="/maruproject_2" class="sub_link link_02">리서치</a></li>
+					<li><a href="/maruproject_3" class="sub_link link_03">마루방향</a></li>
+					<li><a href="/maruproject_4" class="sub_link link_04">리서치2</a></li>
+					<li><a href="/maruproject_5" class="sub_link link_05">리서치3</a></li>
+					<li><a href="/maruproject_6" class="sub_link link_06">스티커</a></li>
+					<li><a href="/maruproject_7" class="sub_link link_07">사용성 조사</a></li>
+					<li><a href="/maruproject_8" class="sub_link link_08">전문가 워크숍</a></li>
+					<li><a href="/maruproject_9" class="sub_link link_09">제작현황</a></li>
+					<li><a href="/maruproject_10" class="sub_link link_10">마루부리 시험판</a></li>
+					<li><a href="/maruproject_11" class="sub_link link_22">마루부리 완성본</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	<script type="text/javascript">
+    // 공통 헤더 스크립트
+    window.addEventListener('DOMContentLoaded', function () {
+        const header = document.querySelector('.header');
+        const gnbBtn = header.querySelector('.btn_gnb');
+        const subMenuBtn = header.querySelector('.gnb_link.link_04');
+        const subMenuArea = header.querySelector('.sub_menu_area');
+
+        gnbBtn.addEventListener('click', function () {
+            header.classList.toggle('active');
+            gnbBtn.classList.toggle('on');
+        });
+
+        subMenuBtn.addEventListener('click', function () {
+            subMenuArea.classList.toggle('open');
+        });
+    });
+	</script>
+</div>
+    <!-- //header -->
+
+
+    <!-- container -->
+    <div class="container">
+        <!-- content -->
+        <div id="content">
+            <div class="spot_wrap">
+                <div class="swiper-wrapper">
+                    <div class="swiper-slide">
+                        <div class="spot maru">
+                            <div class="spot-inner">
+                                <strong class="title">
+                                    <em>11,172</em>자 지원으로<br>
+                                    더 잘 쓰이도록, 더 잘 읽히도록<br>
+                                    <span>마루 부리 글꼴</span></strong>
+                                <a href="https://blog.naver.com/naver_diary/223222167118" class="btn_more">더 자세히 보기</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="swiper-slide">
+                        <div class="spot neo">
+                            <div class="spot-inner">
+                                <strong class="title">문장을 더 돋보이게,<br> 네이버의 새로운 브랜드 폰트<br> 나눔스퀘어 네오</strong>
+                                <a href="https://campaign.naver.com/nanumsquare_neo/" target="_blank" class="btn_more">더
+                                    자세히 보기</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="swiper-slide">
+                        <div class="spot">
+                            <div class="spot-inner">
+                                <strong class="spot-tit">한글의 아름다움,<br> 네이버가 만든 글꼴로 <br> 만납니다.</strong>
+                                <p class="spot-tx">네이버 한글한글 아름답게 글꼴 모음에는 네이버가 2008년부터 개발하고 배포한 150여 종의 모든 폰트가 담겨 있습니다.
+                                </p>
+                                <p class="spot-tx"><em>모든 글꼴은 다운로드 혹은 웹폰트 URL을 통해 자유롭게 사용할 수 있습니다.</em></p>
+                                <button type="button" class="btn-scroll-down">네이버가 개발한 글꼴 모음 보기</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="swiper-pagination"></div>
+            </div>
+
+            <!-- 폰트 설명 섹션 -->
+            <section id="font-info-section" class="font-info-section">
+                <div class="inner">
+                    <h2 class="vh">대표 폰트 소개</h2>
+                    <ul class="font-card-list">
+                        <li>
+                            <div class="fl">
+                                <!-- [D] 글꼴 종류에 따른 클래스명 표기 -->
+                                <strong class="font-name">나눔 글꼴</strong>
+                                <p class="font-des">
+                                    네이버가 한글을 생각하는 마음을 담아 한 글자 한 글자 정성을
+                                    다해 언제 어디서 누구나 사용할 수 있는 ‘나눔글꼴’을
+                                    만들었습니다.
+                                </p>
+                            </div>
+                            <div class="fr">
+                                <p class="overview-info-tx">
+                                    <span>글꼴 수 : 35종</span> <span>용도 : 본문, 제목 겸용</span>
+                                </p>
+                                <p class="guide-tx">
+                                    온라인 세상에 한글로 표현된 생각과 정보가 많아지길 바라며, <br>
+                                    네이버가 2008년 한글 캠페인을 시작했습니다.
+                                </p>
+                                <p class="guide-tx">
+                                    그 시작과 함께 탄생한 국민글꼴, 나눔글꼴 시리즈입니다.
+                                </p>
+                                <button type="button" class="btn-download"><span>나눔 글꼴 전체 내려받기</span></button>
+                            </div>
+                            <a href="/font/nanum" class="font-card-link"><span class="blind">자세히보기</span></a>
+                        </li>
+                        <li>
+                            <div class="fl">
+                                <!-- [D] 글꼴 종류에 따른 클래스명 표기 -->
+                                <strong class="font-name maru">마루 부리 글꼴</strong>
+                                <p class="font-des">
+                                    ‘마루 부리’는 민부리(고딕) 위주의 환경에서 글꼴 선택의 폭을 넓히고, 한글꼴의 디지털 기틀을 만들기 위해 제작한 미래 세대를 위한 글꼴입니다.
+                                </p>
+                            </div>
+                            <div class="fr">
+                                <p class="overview-info-tx">
+                                    <span>글꼴 수 : 5종</span> <span>용도 : 본문용</span>
+                                </p>
+                                <p class="guide-tx">
+                                    디지털 화면에 최적화된 화면용 본문 글꼴로<br>
+                                    2018년부터 4년간 6만여 명의 사용자들과 함께 제작하였습니다.<br>
+                                    부리 글꼴의 아름다움을 느껴보세요.
+                                </p>
+
+                                <button type="button" class="btn-download"><span>마루 부리 글꼴 전체 내려받기</span></button>
+                            </div>
+                            <a href="/font/maru" class="font-card-link"><span class="blind">자세히보기</span></a>
+                        </li>
+                        <li>
+                            <div class="fl">
+                                <!-- [D] 글꼴 종류에 따른 클래스명 표기 -->
+                                <strong class="font-name brush" style="font-family: NanumSeongSirCe">클로바 나눔손글씨</strong>
+                                <p class="font-des">
+                                    여러분의 손글씨와 클로바 AI기술이 만나 탄생한 새로운
+                                    ‘나눔손글씨’ 글꼴입니다. <br>
+                                    저마다의 이야기를 담은 109종의 글꼴을 만나보세요.
+                                </p>
+                            </div>
+                            <div class="fr">
+                                <p class="overview-info-tx">
+                                    <span>글꼴 수 : 109종</span> <span>용도 : 본문, 제목 겸용</span>
+                                </p>
+                                <p class="guide-tx">
+                                    네이버 클로바 AI 기술을 활용해 손글씨마다 가진 고유한 특징을 살려
+                                    글꼴로 제작하였습니다.<br>
+                                    마음을 전하는 손글씨에 담긴 감성을 클로바 나눔손글씨로 느껴보세요.
+                                </p>
+                                <button type="button" class="btn-download"><span>클로바 나눔손글씨 전체 내려받기</span></button>
+                                <a href="https://clova.ai/handwriting" class="font-clova-link" target="_blank"><span>클로바 나눔손글씨 보러가기</span></a>
+                            </div>
+                            <a href="/font/clova" class="font-card-link"><span class="blind">자세히보기</span></a>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+            <!-- // 폰트 설명 섹션 -->
+
+            <!-- 안내사항 -->
+            <section class="notice-section">
+                <div class="inner">
+                    <h2 class="vh">폰트 사용시 안내사항</h2>
+                    <dl class="notice-list">
+                        <dt>네이버 글꼴 저작권 안내</dt>
+                        <dd>
+                            <p>네이버에서 제작한 나눔 글꼴과 마루 부리 글꼴, 클로바 나눔손글씨(이하 네이버 글꼴)의 지적 재산권은 네이버와 네이버 문화재단에 있습니다.</p>
+                            <p>네이버 글꼴은 개인 및 기업 사용자를 포함한 모든 사용자에게 무료로 제공되며 글꼴 자체를 유료로 판매하는 것을 제외한 상업적인 사용이 가능합니다.</p>
+                        </dd>
+                        <dd>
+                            <p>네이버 글꼴은 본 저작권 안내와 라이선스 전문을 포함해서 다른 소프트웨어와 번들하거나 재배포 또는 판매가 가능하고 자유롭게 수정, 재배포하실 수
+                                있습니다.</p>
+                            <p>네이버 글꼴 라이선스 전문을 포함하기 어려울 경우 출처 표기를 권장합니다. 예) 이 페이지에는 네이버에서 제공한 나눔 고딕 글꼴이 적용되어 있습니다.</p>
+                        </dd>
+                        <dd>
+                            <p>네이버 글꼴을 사용한 인쇄물, 광고물(온라인 포함)의 이미지는 나눔 글꼴 프로모션을 위해 활용될 수 있습니다. </p>
+                            <p>이를 원치 않는 사용자는 언제든지 당사에 요청하실 수 있습니다.</p>
+                        </dd>
+                        <dd>
+                            <p>정확한 사용 조건은 <a
+                                    href="https://help.naver.com/support/contents/contents.help?serviceNo=1074&categoryNo=3497">네이버
+                                나눔 글꼴 라이선스 전문</a>을 참고하시기 바랍니다.</p>
+                            <p>네이버 마루 부리 글꼴과 클로바 나눔손글씨도 나눔 글꼴과 같은 오픈 라이선스 글꼴로 동일한 저작권 규정을 적용받습니다.</p>
+                        </dd>
+                    </dl>
+                </div>
+            </section>
+            <!-- //안내사항 -->
+        </div>
+    </div>
+    <!-- footer -->
+    <footer class="footer">
+        <div class="inner">
+            <span class="footer-logo"><span class="vh">네이버 한글한글아름답게</span></span>
+            <span class="footer-info-tx">한글한글 아름답게 사이트는 네이버 글꼴로 제작되었으며<br>
+				한글한글 아름답게와 네이버 클로바가 함께합니다.</span>
+            <ul class="footer-nav-list">
+                <!-- [D] sns 유형에 따른 클래스 표기 -->
+                <li class="twitter">
+                    <a href="#">
+                        <span class="vh">트위터</span>
+                    </a>
+                </li>
+                <li class="facebook">
+                    <a href="#">
+                        <span class="vh">페이스북</span>
+                    </a>
+                </li>
+                <li class="band">
+                    <a href="#">
+                        <span class="vh">밴드</span>
+                    </a>
+                </li>
+                <li class="blog">
+                    <a href="#">
+                        <span class="vh">블로그</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </footer>
+    <!-- //footer -->
+
+
+</div>
+
+<script type="text/javascript" src="/js/jquery-3.2.1.min.js"></script>
+<script type="text/javascript" charset="utf-8" src="/js/jquery.mktShare.1.5.1.js?01"></script>
+
+<script src="/js/swiper.min.js"></script>
+<script>
+    var spotSwiper = new Swiper('.spot_wrap', {
+        // dots: true,
+        pagination: {
+            el: ".swiper-pagination",
+            clickable: true,
+        },
+    });
+</script>
+<script>
+    $(window).ready(function () {
+        $('.btn_action1').click(function () {
+            $('.layer-popup').addClass('on');
+            $(html, body).css('overflow', 'hidden')
+        })
+
+    })
+    $(".btn-scroll-down").click(function (e) {
+        e.preventDefault();
+        var hieght = $(".header").height();
+        jQuery('html, body').animate({scrollTop: ($(".font-info-section").offset().top - hieght)}, 'slow');
+    });
+
+    // 클릭 이벤트
+    $('.main-gnb-list li a, .sub-gnb-list li a').click(function () {
+        $(this).toggleClass('on')
+    });
+
+    var files = ["nanum-all_new.zip", "maruburi.zip", "clova-all.zip"];
+    $(".btn-download").click(function () {
+        var idx = $(".btn-download").index($(this));
+
+        countUpFontBundle(idx)
+        location.href = 'https://hangeul.naver.com/' + 'hangeul_static/webfont/zips/' + files[idx];
+    })
+
+    function countUpFontBundle(idx) {
+        let fontId = 'nanum-all';
+        if (idx === 1) {
+            fontId = 'maru-buri'
+        } else if (idx === 2) {
+            fontId = 'clova-all'
+        }
+
+        let params = {'id': fontId, 'downloadCnt': 1}
+        $.ajax({
+            type: 'patch',
+            url: '/api/font/countup',
+            cache: false,
+            contentType: 'application/json',
+            data: JSON.stringify(params),
+            success: function (response) {
+                // console.log('response : ' + response)
+            }
+        });
+    }
+
+    jQuery.mktShare.init("한글의 아름다움,네이버가 만든 글꼴로 만납니다.", "https://hangeul.naver.com/font",
+        {
+            shortUrl: "https://hangeul.naver.com/font",
+            twitter: "한글의 아름다움,네이버가 만든 글꼴로 만납니다.",
+            band: "한글의 아름다움,네이버가 만든 글꼴로 만납니다."
+        }
+    );
+
+    //페이스북 퍼가기
+    jQuery(".facebook").click(function (event) {
+        event.preventDefault();
+        jQuery.mktShare.facebook();
+    });
+
+    //트위터 퍼가기
+    jQuery(".twitter").click(function (event) {
+        event.preventDefault();
+        jQuery.mktShare.twitter();
+    });
+
+    //밴드 퍼가기
+    jQuery(".band").click(function (event) {
+        event.preventDefault();
+        jQuery.mktShare.band();
+    });
+
+    //블로그퍼가기
+    jQuery(".blog").click(function (event) {
+        event.preventDefault();
+        jQuery.mktShare.naverBlog();
+    });
+
+    //목차 버튼 클릭 시 상단메뉴 표시
+    $(".gnb_off").on("click", function () {
+        $('.dimmed').toggle();
+
+        function nav() {
+            if ($('.project_nav_area .menu_list').is(":visible")) {
+                $('.project_nav_area .menu_list').hide();
+                $('.button_gnb').css("top", "0px");
+                $('.section_menu_area').css("top", "0px");
+            } else {
+                $('.project_nav_area .menu_list').css("display", "table");
+                $('.button_gnb').css('top', '204px');
+                $('.section_menu_area').css("top", "204px");
+            }
+        };
+        nav();
+    });
+
+    $(".dimmed").on("click", function () {
+        $('.dimmed').toggle();
+
+        function nav() {
+            if ($('.project_nav_area .menu_list').is(":visible")) {
+                $('.project_nav_area .menu_list').hide();
+                $('.button_gnb').css("top", "0px");
+                $('.section_menu_area').css("top", "0px");
+            } else {
+                $('.project_nav_area .menu_list').css("display", "table");
+                $('.button_gnb').css('top', '204px');
+                $('.section_menu_area').css("top", "204px");
+            }
+        };
+        nav();
+    });
+
+    var oGnbManager = {
+        sGnbButtonSelector: ".gnb_on, .gnb_off",
+        sWrapAreaSelector: "#wrap",
+        sGnbAreaSelector: "#header",
+        // sNavAreaSelector : ".nav",
+        showGnb: function () {
+            var oSelf = this;
+            jQuery(oSelf.sWrapAreaSelector).animate({"margin-top": 60}, 500);
+            jQuery(oSelf.sGnbAreaSelector).animate({"top": 0}, 500);
+            jQuery(oSelf.sNavAreaSelector).animate({"padding-top": 60}, 500);
+            $(".gnb_off").show();
+            $(".gnb_on").hide();
+        },
+        hideGnb: function () {
+            var oSelf = this;
+            jQuery(oSelf.sWrapAreaSelector).animate({"margin-top": 0}, 500);
+            jQuery(oSelf.sGnbAreaSelector).animate({"top": -60}, 500);
+            jQuery(oSelf.sNavAreaSelector).animate({"padding-top": 0}, 500);
+            $(".gnb_off").hide();
+            $(".gnb_on").show();
+        },
+        toggleGnb: function () {
+            var oSelf = this;
+            if (oSelf.isHide()) {
+                oSelf.showGnb();
+            } else {
+                oSelf.hideGnb();
+            }
+        },
+        isHide: function () {
+            var oSelf = this;
+            return (jQuery(oSelf.sGnbAreaSelector).css("top") == "-60px");
+        },
+        isShow: function () {
+            var oSelf = this;
+            return !oSelf.isHide();
+        },
+        init: function () {
+
+            var oSelf = this;
+
+            jQuery(oSelf.sGnbButtonSelector).click(function (event) {
+                event.preventDefault();
+                oSelf.toggleGnb();
+            });
+
+        }
+    };
+
+    oGnbManager.init();
+
+</script>
+</body>
+</html>

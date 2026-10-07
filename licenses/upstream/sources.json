@@ -1,0 +1,52 @@
+[
+  {
+    "path": "licenses/upstream/OFL-1.1.txt",
+    "source": "https://raw.githubusercontent.com/notofonts/noto-fonts/main/LICENSE",
+    "sha256": "0dab92d0544f7b233403f14b84a663bdbfa746982eda629e7f4f9ffe1b036feb"
+  },
+  {
+    "path": "licenses/upstream/SourceHanSans-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/adobe-fonts/source-han-sans/master/LICENSE.txt",
+    "sha256": "fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2"
+  },
+  {
+    "path": "licenses/upstream/SourceHanSerif-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/adobe-fonts/source-han-serif/master/LICENSE.txt",
+    "sha256": "9ff5bb567e1b92c801fc1069e5fbf992ff8efccacb9db94e5959a5b3ba9bb903"
+  },
+  {
+    "path": "licenses/upstream/Adobe-CMap-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/adobe-type-tools/cmap-resources/master/LICENSE.md",
+    "sha256": "742665db9c8e1bc72603c6d319ca3e90b83bd6d95202f0cd4ef11068a07a9c29"
+  },
+  {
+    "path": "licenses/upstream/DocLayout-ONNX-MODEL-CARD.md",
+    "source": "https://huggingface.co/wybxc/DocLayout-YOLO-DocStructBench-onnx/raw/main/README.md",
+    "sha256": "ef30e30b57e315278703ddd7baf813df88f1594e2f4c0a8b2696a326a9ce8ad8"
+  },
+  {
+    "path": "licenses/upstream/PP-DocLayoutV2-MODEL-CARD.md",
+    "source": "https://huggingface.co/PaddlePaddle/PP-DocLayoutV2/raw/main/README.md",
+    "sha256": "be34c66bfa070cd331951c499d1d13cbe76978507a80cadd512a402291e3d96b"
+  },
+  {
+    "path": "licenses/upstream/NAVER-Font-LICENSE.html.txt",
+    "source": "https://hangeul.naver.com/font",
+    "sha256": "995e447e363206e391fbe964375b60ab06883df0fefa44689f7d1a9f9bb8f9cc"
+  },
+  {
+    "path": "licenses/upstream/flatbuffers-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/google/flatbuffers/v25.12.19/LICENSE",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "path": "licenses/upstream/GoNotoKurrent-README.md",
+    "source": "https://raw.githubusercontent.com/satbyy/go-noto-universal/master/README.md",
+    "sha256": "e1567db20136b7d8f20de4a23ce3dad2e471942ceb355a121eaf7517fac95c0b"
+  },
+  {
+    "path": "licenses/upstream/PP-DocLayoutV2-ONNX-MODEL-CARD.md",
+    "source": "https://huggingface.co/opendatalab/MinerU-4_models_onnx/raw/358310b4f64b95f9fefc372ad899356e4111f376/README.md",
+    "sha256": "bb03afa9a76c3ccec9ecf0c92e99129eca3e0049f0c9269e8ec63446768e2449"
+  }
+]

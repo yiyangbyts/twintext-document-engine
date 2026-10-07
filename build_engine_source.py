@@ -60,7 +60,9 @@ def source_files(root=ROOT):
     for name in sorted(PUBLIC_ENGINE_FILES):
         files['engine/' + name] = read_public(root, 'engines/babeldoc/' + name)
     inventory = json.loads(read_public(root, 'licenses/runtime/inventory.json'))
-    notices = {'licenses/AGPL-3.0.txt', 'licenses/APACHE-2.0.txt', 'licenses/runtime/inventory.json'}
+    notices = {'licenses/AGPL-3.0.txt', 'licenses/APACHE-2.0.txt', 'licenses/runtime/inventory.json',
+               'licenses/uv/LICENSE-MIT', 'licenses/uv/LICENSE-APACHE', 'licenses/upstream/sources.json'}
+    notices.update(item['path'] for item in json.loads(read_public(root, 'licenses/upstream/sources.json')))
     for platform in inventory['platforms'].values():
         notices.update(item['path'] for item in platform['runtimeNotices'])
         for package in platform['packages']:
@@ -71,6 +73,9 @@ def source_files(root=ROOT):
             raise ValueError('Unsafe license path')
         files[name] = read_public(root, name)
     for name, target in [('THIRD-PARTY-NOTICES.md', 'THIRD-PARTY-NOTICES.md'),
+                         ('docs/PUBLIC-DOCUMENTATION.zh-CN.md', 'DOCUMENTATION.zh-CN.md'),
+                         ('vendor/onnxruntime-web-1.30.0/LICENSE-MIT', 'licenses/frontend/ONNX-Runtime-Web-LICENSE-MIT'),
+                         ('vendor/onnxruntime-web-1.30.0/NOTICE.md', 'licenses/frontend/ONNX-Runtime-Web-NOTICE.md'),
                          ('engines/installer/runtime_probe.py', 'runtime_probe.py'),
                          ('scripts/build_engine_source.py', 'build_engine_source.py')]:
         files[target] = read_public(root, name)
@@ -84,6 +89,8 @@ def source_files(root=ROOT):
 Source snapshot for TwinText {version}. This repository publishes the independently
 runnable document engine, its modifications, public HTTP/CLI interface, tests,
 dependency constraints and necessary installation/source-building materials.
+
+中文使用说明、版权与许可及源码下载：[GitHub 文档（中文）](DOCUMENTATION.zh-CN.md)。
 
 The engine's TwinText-authored code, runtime probe and source builder are provided
 under AGPL-3.0-only. Third-party code and resources retain their original licenses.

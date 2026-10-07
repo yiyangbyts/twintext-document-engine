@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "version": "2.0.7",
+  "version": "2.0.8",
   "engine": "twintext-document-engine",
   "protocol": 5,
   "license": "AGPL-3.0-only",
@@ -8,10 +8,10 @@
   "dependencies": "licenses/runtime/inventory.json",
   "sourceDelivery": {
     "schema": 1,
-    "version": "2.0.7",
+    "version": "2.0.8",
     "repository": "https://github.com/yiyangbyts/twintext-document-engine",
-    "release": "https://github.com/yiyangbyts/twintext-document-engine/releases/tag/v2.0.7",
-    "archive": "https://github.com/yiyangbyts/twintext-document-engine/releases/download/v2.0.7/twintext-engine-source-2.0.7.zip"
+    "release": "https://github.com/yiyangbyts/twintext-document-engine/releases/tag/v2.0.8",
+    "archive": "https://github.com/yiyangbyts/twintext-document-engine/releases/download/v2.0.8/twintext-engine-source-2.0.8.zip"
   },
   "files": {
     "engine/API.md": "bea7ba8634ef36dd4f0d69acfc6261fc9467c00953d5fcc53d8d25b0608667ad",
@@ -282,12 +282,28 @@
     "licenses/runtime/texts/fcff87c3a47ce8028a8512aa182d4fcf0ad1c90544ee75cf9b343684cac194de": "fcff87c3a47ce8028a8512aa182d4fcf0ad1c90544ee75cf9b343684cac194de",
     "licenses/runtime/texts/fdcb59154c74cbaba16a11242f7740bea9f23d6feb5547917d8c5f94a80392a5": "fdcb59154c74cbaba16a11242f7740bea9f23d6feb5547917d8c5f94a80392a5",
     "licenses/runtime/texts/fe1049884b1a0d9342901e88e07f32925d24b3121d9972b6a6805fb9824b095d": "fe1049884b1a0d9342901e88e07f32925d24b3121d9972b6a6805fb9824b095d",
+    "licenses/upstream/Adobe-CMap-LICENSE.txt": "742665db9c8e1bc72603c6d319ca3e90b83bd6d95202f0cd4ef11068a07a9c29",
+    "licenses/upstream/DocLayout-ONNX-MODEL-CARD.md": "ef30e30b57e315278703ddd7baf813df88f1594e2f4c0a8b2696a326a9ce8ad8",
+    "licenses/upstream/GoNotoKurrent-README.md": "e1567db20136b7d8f20de4a23ce3dad2e471942ceb355a121eaf7517fac95c0b",
+    "licenses/upstream/NAVER-Font-LICENSE.html.txt": "995e447e363206e391fbe964375b60ab06883df0fefa44689f7d1a9f9bb8f9cc",
+    "licenses/upstream/OFL-1.1.txt": "0dab92d0544f7b233403f14b84a663bdbfa746982eda629e7f4f9ffe1b036feb",
+    "licenses/upstream/PP-DocLayoutV2-MODEL-CARD.md": "be34c66bfa070cd331951c499d1d13cbe76978507a80cadd512a402291e3d96b",
+    "licenses/upstream/PP-DocLayoutV2-ONNX-MODEL-CARD.md": "bb03afa9a76c3ccec9ecf0c92e99129eca3e0049f0c9269e8ec63446768e2449",
+    "licenses/upstream/SourceHanSans-LICENSE.txt": "fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2",
+    "licenses/upstream/SourceHanSerif-LICENSE.txt": "9ff5bb567e1b92c801fc1069e5fbf992ff8efccacb9db94e5959a5b3ba9bb903",
+    "licenses/upstream/flatbuffers-LICENSE.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "licenses/upstream/sources.json": "a0ae80dade6758e233e0f43b4b68cce976eb8488dfd39e98b61a1c7f31a94fd9",
+    "licenses/uv/LICENSE-APACHE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+    "licenses/uv/LICENSE-MIT": "860e3d7a86b84e6a7012c7a635fc64df475cebc6cce34dfeb73a5982ec58176c",
     "THIRD-PARTY-NOTICES.md": "594c16baa366d222e0fcd154c1a641d8855c08a9c45b90032a23f2465d1d3efc",
+    "DOCUMENTATION.zh-CN.md": "1386e54ba9ce153b880c6bbee22a3abf9554e28f86d2c3738aed375596ddc0b1",
+    "licenses/frontend/ONNX-Runtime-Web-LICENSE-MIT": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
+    "licenses/frontend/ONNX-Runtime-Web-NOTICE.md": "cca98c597f27aeb31a5c6203c6320cf26ec6cf159502462ee37a4741d205fe75",
     "runtime_probe.py": "3dae9599f75db0be9ff16b6994d59d55821c8a8fabe5728c2c4eaffca6200f71",
-    "build_engine_source.py": "0ebea4525fd3ee8c544bd38671658c069d1d64769b077b1fd6a86213cdc98561",
-    "engine/source-distribution.json": "77d73c43b8eead4e6b27c428ed504fc1161b93ef9b77786ad788ab4be874ca2a",
+    "build_engine_source.py": "0429e14c87fe4629509f5660f38e79e69f0157be6a2ad49523ffa8c53553a99c",
+    "engine/source-distribution.json": "d4dd450c9afe0fd0e75f579b82d3a5cc7caa46a04ea8d94c39404485e4aaf9b4",
     "LICENSE.txt": "afca41723b45e26069f68d485bf906a202f892f90c801d3052f8e6296bb41454",
     ".gitignore": "6e8c851dbf2987348b671708305b31255c8d12f2915069025fd32504f1eb03ef",
-    "README.md": "f4dc7620a50b8d8131dfb55081b0a4da6c0be51378149a21461896762fe69bb6"
+    "README.md": "9f973db6c295a7a086959c04fe416b79482d2d135f1c7af13623129913e40e52"
   }
 }
