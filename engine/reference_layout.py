@@ -321,11 +321,7 @@ class ReferencePolicy:
             paragraph=copy.deepcopy(e['paragraph'])
             class EntryProgress:
                 def advance(self):pass
-            local=getattr(self.config.translator,'twintext_context',None)
-            if local is not None:local.page=index+getattr(self.config,'twintext_page_offset',0);local.kind=e['kind']
-            try:translator.translate_paragraph(paragraph,page,pbar=EntryProgress(),tracker=ParagraphTranslateTracker(),page_font_map=fonts,xobj_font_map=xfonts)
-            finally:
-                if local is not None:local.page=None;local.kind=None
+            translator.translate_paragraph(paragraph,page,pbar=EntryProgress(),tracker=ParagraphTranslateTracker(),page_font_map=fonts,xobj_font_map=xfonts)
             self.config.raise_if_cancelled()
             with self.lock:e['paragraph']=paragraph;e['translated']=paragraph.unicode!=e['sourceText']
             if stream:stream.reference_updated(index,self.snapshot(index))

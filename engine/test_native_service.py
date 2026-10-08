@@ -6,30 +6,6 @@ sys.path.insert(0,str(Path(__file__).parent))
 from babel_adapter import il_regions
 from service import Jobs,handler,MAX_ACTIVE_JOBS,MAX_RETAINED_JOBS
 class Tests(unittest.TestCase):
-    def test_explicit_completion_keeps_names_but_tracks_partial_prose_on_its_actual_page(self):
-        jobs=Jobs('babeldoc','.')
-        def native(pdf,folder,payload,bridge,progress,cancel_event):
-            self.assertEqual(bridge('John Smith and Jane Jones',16,'author'),'John Smith and Jane Jones')
-            self.assertEqual(bridge('The treatment improves health.',19,'plain text'),'治疗 improves health。')
-            self.assertEqual(bridge.retained_count,1)
-            return [],b'%PDF-complete'
-        try:
-            with patch('babel_adapter.run',native):
-                key=jobs.submit({'pdf':base64.b64encode(b'%PDF-fixture').decode(),'nativeExport':True})
-                deadline=time.time()+3
-                for page,text,retained in [(16,'John Smith and Jane Jones',False),(19,'治疗 improves health。',True)]:
-                    while not (pending:=jobs.snapshot(key)['requests']):
-                        self.assertLess(time.time(),deadline);time.sleep(.005)
-                    self.assertEqual(pending[0]['pageIndex'],page)
-                    answer={'id':pending[0]['id'],'translation':text,'retained':retained}
-                    jobs.reply(key,answer);jobs.reply(key,answer)
-                    while jobs.snapshot(key)['requests'] and jobs.snapshot(key)['requests'][0]['id']==answer['id']:
-                        self.assertLess(time.time(),deadline);time.sleep(.005)
-                while jobs.snapshot(key)['state'] not in ('complete','error'):
-                    self.assertLess(time.time(),deadline);time.sleep(.005)
-                state=jobs.snapshot(key);self.assertEqual(state['state'],'complete',state)
-                self.assertEqual(state['result']['incompletePages'],[19])
-        finally:jobs.pool.shutdown(wait=True)
     def test_lost_submission_response_reuses_the_job_and_rejects_conflicting_input(self):
         jobs=Jobs('babeldoc','model');payload={'pdf':'fixture','nativeExport':True,'clientJobId':'a'*32}
         try:

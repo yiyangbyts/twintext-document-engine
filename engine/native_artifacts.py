@@ -17,13 +17,7 @@ def capture(config,policy,collector):
         def translate_paragraph(self,paragraph,page,*args,**kwargs):
             try:sources[(page.page_number,paragraph.debug_id)]=paragraph_text(paragraph)
             except Exception:sources[(page.page_number,paragraph.debug_id)]=paragraph.unicode or ''
-            local=getattr(config.translator,'twintext_context',None)
-            previous=(getattr(local,'page',None),getattr(local,'kind',None)) if local is not None else (None,None)
-            if local is not None:
-                local.page=page.page_number+getattr(config,'twintext_page_offset',0);local.kind=previous[1] or paragraph.layout_label
-            try:return super().translate_paragraph(paragraph,page,*args,**kwargs)
-            finally:
-                if local is not None:local.page,local.kind=previous
+            return super().translate_paragraph(paragraph,page,*args,**kwargs)
     class ExportTypesetting(typesetter):
         def typesetting_document(self,document):
             # Snapshot before typesetting mutates composition/glyph geometry.

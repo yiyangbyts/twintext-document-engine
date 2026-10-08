@@ -114,7 +114,7 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
         checkpoint=Path(str(destination)+'.parts') if payload.get('outputFile') else folder/'parts'
         checkpoint.mkdir(parents=True,exist_ok=True)
         if not isinstance(source,Path):shutil.copyfile(source_file,checkpoint/'source.pdf');source_file=checkpoint/'source.pdf'
-        signature=hashlib.sha256(json.dumps(dict(geometryRevision='complete-reading-2.0.12',source=digest(source_file),pages=selected,cacheKey=payload.get('cacheKey'),
+        signature=hashlib.sha256(json.dumps(dict(geometryRevision='sideways-2.0.11',source=digest(source_file),pages=selected,cacheKey=payload.get('cacheKey'),
             sourceLanguage=payload.get('sourceLanguage'),targetLanguage=payload.get('targetLanguage'),documentOptions=payload.get('documentOptions')),sort_keys=True).encode()).hexdigest()
         failed=[];export=[];completed=set();revisions={};selected_set=set(selected);reflow_parts=[]
         with pymupdf.open(source_file) as assembled:
@@ -148,7 +148,6 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
                                 document.insert_pdf(original,from_page=start,to_page=end)
                                 data=document.tobytes(garbage=3,deflate=True)
                             local={**payload,'pages':','.join(str(n-start+1) for n in indexes),'pageIsolation':False,
-                                '_documentPageOffset':start+payload.get('_documentPageOffset',0),
                                 'currentPage':max(0,min(end-start,focus-start)),'_structureState':{'inReferences':reference_states[start]}}
                             local.pop('outputFile',None)
                             def update(**event):

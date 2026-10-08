@@ -3,8 +3,7 @@
 The engine binds only 127.0.0.1. It accepts native loopback JSON HTTP clients;
 web origins are blocked except the explicit Zotero application origin. Clients
 never supply PDF glyph/IL objects or reference/layout analysis implementations.
-Translation relay requests contain opaque request IDs, plain text, a zero-based
-pageIndex and a paragraph kind. No parser implementation is supplied by clients.
+Translation relay requests contain only opaque request IDs and plain text.
 The current concurrency/format/view controls remain available for incremental use.
 
 - `GET /health`: protocol, engine identifier, capabilities and activity. Require
@@ -21,10 +20,7 @@ The current concurrency/format/view controls remain available for incremental us
   progress, timing, requests, previews and warnings. Preview PNG/PDF frames contain
   translated paragraphs as they become ready, before full-document completion.
   Polling and preview display must not block outstanding translation replies.
-- `POST /v1/jobs/{id}/reply`: `{id, translation, retained}`. Translation must be a string.
-  Optional retained marks unresolved prose, including partially translated answers;
-  false explicitly accepts literal identifiers or names. Results expose their
-  actual incompletePages separately from failedPages. Legacy replies remain accepted.
+- `POST /v1/jobs/{id}/reply`: `{id, translation}`. Translation must be a string.
   Preserve BabelDOC's `<bN>` and `</bN>` placeholders. Idempotent exact retries are
   accepted. No structure analysis operations exist in protocol 5.
 - `POST /v1/jobs/{id}/view`: `{pageIndex}` to prioritize the visible page.
@@ -68,11 +64,3 @@ of at most 16 pages. `artifactFile` identifies their manifest for `reflowNative`
 precedes the complete reflow. Superseded jobs can be cancelled without new model
 requests. Checkpoints use a fixed IL dataclass allowlist, never pickle or executable
 client data, and remain usable after the engine restarts.
-
-`POST /v1/jobs` with `readingNative: true`, `artifactFile` (or an unexpired
-artifactId) and currentPage returns a read-only structured page. It includes
-profile `native-reading-2.0.12-v1`, dimensions, rotation, a PNG background,
-paragraph rectangles, text runs, original formula graphics and fixed obstacles.
-Only the requested checkpoint part is loaded. This operation never translates
-or changes the native PDF. Derived disk caches are bounded to 64 MiB per
-checkpoint directory. Release completed reading jobs using the usual endpoint.
