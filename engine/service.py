@@ -102,7 +102,13 @@ class Jobs:
         try:
             job['state']='running';job['startedMonotonic']=time.monotonic();job['stageStartedMonotonic']=job['startedMonotonic'];job['stageTimings']={}
             if job['cancelled']:raise RuntimeError('Cancelled')
-            if self.key=='babeldoc' and payload.get('reflowNative'):
+            if self.key=='babeldoc' and payload.get('reflowNative') and payload.get('artifactFile'):
+                from native_reflow import run
+                def preview(event):
+                    with self.lock:job['previewCursor']=1;job['previews']={event['pageIndex']:event}
+                with tempfile.TemporaryDirectory(prefix='twintext-reflow-') as temp:
+                    result=run(payload,Path(temp),job['cancel_event'],preview)
+            elif self.key=='babeldoc' and payload.get('reflowNative'):
                 from native_artifacts import reflow
                 if not self.artifacts:raise ValueError('native_artifact_expired')
                 artifact=self.artifacts.get(payload.get('artifactId'))
@@ -204,6 +210,7 @@ class Jobs:
                             job.setdefault('exportWarnings',[]).append(preview_failure(error,'export-text',payload.get('currentPage',0)))
                     if collector and collector.get('batched'):
                         job['exportPages']=collector.get('exportPages',[]);job['failedPages']=collector.get('failedPages',[])
+                    if collector and collector.get('artifactFile'):job['artifactFile']=collector['artifactFile']
                     result={'regions':regions}
                 if pdf_result:
                     if isinstance(pdf_result,Path):
@@ -216,6 +223,7 @@ class Jobs:
                     if payload.get('documentExport'):
                         result['profile']='native-document-9029-r1';result['previewWarnings']=job.get('previewWarnings',[])
                         result['exportPages']=job.pop('exportPages',[]);result['artifactId']=job.pop('artifactId',None);result['exportWarnings']=job.pop('exportWarnings',[])
+                        result['artifactFile']=job.pop('artifactFile',None)
             if job['cancelled']:raise RuntimeError('Cancelled')
             if job.get('bridgeFailure'):raise RuntimeError('Translation provider failed')
             job['result']=result;job['state']='complete'
@@ -308,7 +316,7 @@ def handler(jobs,config):
                     if delivery.get('schema')!=1 or delivery.get('repository')!=repository or not isinstance(version,str) or not re.fullmatch(r'\d+\.\d+\.\d+',version) or delivery.get('archive')!=expected:
                         return self.send(503,{'error':'Invalid source delivery metadata'})
                     self.send_response(302);self.send_header('Location',expected);self.send_header('Cache-Control','no-store');self.send_header('Content-Length','0');self.end_headers();return
-                if self.path=='/health':return self.send(200,{**jobs.health(),'ready':True,'protocol':5,'engine':config['id'],'backend':jobs.key,'capabilities':['native-pdf-9020','cancellable-bridge','native-paragraph-preview-9031','engine-structure-2.0.5-v1','native-reflow-export-9035','bounded-native-files-2.0.9']})
+                if self.path=='/health':return self.send(200,{**jobs.health(),'ready':True,'protocol':5,'engine':config['id'],'backend':jobs.key,'capabilities':['native-pdf-9020','cancellable-bridge','native-paragraph-preview-9031','engine-structure-2.0.5-v1','native-reflow-export-9035','bounded-native-files-2.0.9','persistent-native-reflow-2.0.10']})
                 location=urlsplit(self.path)
                 if re.fullmatch(r'/v1/jobs/[^/]+(?:/result)?',location.path):
                     parts=location.path.split('/');query=parse_qs(location.query)

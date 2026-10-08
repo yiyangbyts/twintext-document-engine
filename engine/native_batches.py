@@ -70,6 +70,7 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
     import pymupdf
     from structure_plan import REFERENCES,END,STATEMENT
     from native_artifacts import text_pages
+    from native_reflow import save_part,save_manifest
     folder.mkdir(parents=True,exist_ok=True)
     source_file=source if isinstance(source,Path) else folder/'original.pdf'
     if not isinstance(source,Path):source_file.write_bytes(source)
@@ -84,6 +85,11 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
                 destination=Path(payload['outputFile']);destination.parent.mkdir(parents=True,exist_ok=True)
                 if destination.resolve()==source_file.resolve():raise ValueError('Cannot overwrite source PDF')
                 temporary=destination.with_name(destination.name+'.tmp');temporary.write_bytes(output);temporary.replace(destination)
+                if collector and 'document' in collector:
+                    checkpoint=Path(str(destination)+'.parts');checkpoint.mkdir(parents=True,exist_ok=True)
+                    part=save_part(collector,checkpoint/'0.il.gz',0,count-1)
+                    if not isinstance(source,Path):shutil.copyfile(source_file,checkpoint/'source.pdf');source_file=checkpoint/'source.pdf'
+                    collector['artifactFile']=save_manifest(checkpoint,source_file,selected,count,[part] if part else [])
                 return regions,destination
             return regions,output
 
@@ -107,9 +113,10 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
         destination.parent.mkdir(parents=True,exist_ok=True)
         checkpoint=Path(str(destination)+'.parts') if payload.get('outputFile') else folder/'parts'
         checkpoint.mkdir(parents=True,exist_ok=True)
+        if not isinstance(source,Path):shutil.copyfile(source_file,checkpoint/'source.pdf');source_file=checkpoint/'source.pdf'
         signature=hashlib.sha256(json.dumps(dict(source=digest(source_file),pages=selected,cacheKey=payload.get('cacheKey'),
             sourceLanguage=payload.get('sourceLanguage'),targetLanguage=payload.get('targetLanguage'),documentOptions=payload.get('documentOptions')),sort_keys=True).encode()).hexdigest()
-        failed=[];export=[];completed=set();revisions={};selected_set=set(selected)
+        failed=[];export=[];completed=set();revisions={};selected_set=set(selected);reflow_parts=[]
         with pymupdf.open(source_file) as assembled:
             toc=assembled.get_toc(simple=False)
             def publish(event,offset):
@@ -156,6 +163,8 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
                             pages=text_pages(local_collector) if local_collector and 'document' in local_collector else []
                             pages=[{**p,'index':p['index']+start} for p in pages]
                             cached=dict(signature=signature,sha256=digest(part_file),exportPages=pages)
+                            reflow_part=save_part(local_collector,checkpoint/f'{start}-{end}.il.gz',start,end)
+                            if reflow_part:cached['reflowPart']=reflow_part
                             # A retained/refused paragraph must be eligible for
                             # translation again, rather than becoming a success cache.
                             if getattr(bridge,'retained_count',0)==before:
@@ -182,6 +191,7 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
                             publish({'type':'native-page-preview','profile':'native-document-9029-r1','pageIndex':focus-start,
                                 'revision':1,'pdf':base64.b64encode(one.tobytes()).decode()},start)
                 export.extend(p for p in cached.get('exportPages',[]) if p['index'] in selected_set)
+                if cached.get('reflowPart'):reflow_parts.append(cached['reflowPart'])
                 completed.update(indexes)
                 if progress:progress(type='batch-complete',stage='completed-native-batch',completed_pages=len(completed),total_pages=len(selected),overall_progress=100*len(completed)/len(selected),page_count=count)
             for start,end in chunks:part(start,end)
@@ -204,6 +214,7 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
                 temporary=destination.with_name(destination.name+'.tmp');assembled.save(temporary,garbage=3,deflate=True);temporary.replace(destination);output_count=count
         with pymupdf.open(destination) as result:
             if result.page_count!=output_count:raise ValueError('Native assembled page alignment failed')
-        if collector is not None:collector.update(exportPages=sorted(export,key=lambda p:p['index']),failedPages=sorted(failed),batched=True)
+        if collector is not None:collector.update(exportPages=sorted(export,key=lambda p:p['index']),failedPages=sorted(failed),batched=True,
+            artifactFile=save_manifest(checkpoint,source_file,sorted(selected_set-set(failed)),count,reflow_parts))
         if progress:progress(type='validated',page_count=output_count,completed_pages=len(completed),total_pages=len(selected),overall_progress=100)
         return [],destination if payload.get('outputFile') else destination.read_bytes()

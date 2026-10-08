@@ -57,3 +57,10 @@ then assemble selected pages in their original positions. Completed parts are
 checksummed on disk and reused on restart. Content failures can be narrowed to
 a single page; original content and a failure warning remain visible. Credentials,
 quota, missing environment and disk failures remain explicit job errors.
+
+Completed file-backed documents retain checksummed, gzip-compressed IL checkpoints
+of at most 16 pages. `artifactFile` identifies their manifest for `reflowNative`;
+`outputFile` keeps the resulting PDF out of progress JSON. A focused-page preview
+precedes the complete reflow. Superseded jobs can be cancelled without new model
+requests. Checkpoints use a fixed IL dataclass allowlist, never pickle or executable
+client data, and remain usable after the engine restarts.

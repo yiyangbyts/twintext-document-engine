@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "2.0.9",
+  "version": "2.0.10",
   "repository": "https://github.com/yiyangbyts/twintext-document-engine",
-  "release": "https://github.com/yiyangbyts/twintext-document-engine/releases/tag/v2.0.9",
-  "archive": "https://github.com/yiyangbyts/twintext-document-engine/releases/download/v2.0.9/twintext-engine-source-2.0.9.zip"
+  "release": "https://github.com/yiyangbyts/twintext-document-engine/releases/tag/v2.0.10",
+  "archive": "https://github.com/yiyangbyts/twintext-document-engine/releases/download/v2.0.10/twintext-engine-source-2.0.10.zip"
 }
