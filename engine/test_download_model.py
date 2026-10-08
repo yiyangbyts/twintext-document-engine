@@ -35,7 +35,7 @@ class DownloadDestination(unittest.TestCase):
             assets.verify_file=lambda path,value:hashlib.sha3_256(path.read_bytes()).hexdigest()==value
             package=types.ModuleType('babeldoc');package.__path__=[];package.const=const
             folder=types.ModuleType('babeldoc.assets');folder.__path__=[]
-            with patch.object(download_model,'ROOT',root),patch.dict(sys.modules,{'babeldoc':package,'babeldoc.const':const,'babeldoc.assets':folder,'babeldoc.assets.assets':assets}),patch.dict(os.environ,{'TWINTEXT_BABEL_ASSETS':str(external)}),patch.object(download_model,'emit'):
+            with patch.object(download_model,'ROOT',root),patch.dict(sys.modules,{'babeldoc':package,'babeldoc.const':const,'babeldoc.assets':folder,'babeldoc.assets.assets':assets}),patch.dict(os.environ,{'TWINTEXT_BABEL_ASSETS':str(external)}),patch.object(download_model,'emit'),patch('asset_downloads.prepare'):
                 if corrupt:
                     with self.assertRaisesRegex(RuntimeError,'Pinned BabelDOC asset verification failed'):download_model.main()
                 else:

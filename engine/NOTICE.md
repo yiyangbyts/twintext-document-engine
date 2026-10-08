@@ -6,4 +6,6 @@ Copyright (C) 2026 TwinText, for adapter modifications through 2026-10-08: nativ
 
 Version 2.0.12 adds a read-only structured-page API with bounded derived caches, original formula graphics and display-formula obstacles. Translation replies carry explicit unresolved-fragment status, paragraph labels and original page indexes; incomplete pages are distinct from document failures. These changes do not rewrite PDFs during reading adjustments.
 
+Version 2.0.13 adds measured asset source selection, bounded parallel downloads, range resume, slow-source failover and pinned digest verification.
+
 TwinText-authored engine code, the runtime probe and source builder are licensed under AGPL-3.0-only. The standalone CLI and HTTP interface run the same document policies. Source and build materials are available at https://github.com/yiyangbyts/twintext-document-engine/releases without payment or activation. Original license texts and notices remain included.

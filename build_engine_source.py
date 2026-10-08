@@ -15,7 +15,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE_REPOSITORY = 'https://github.com/yiyangbyts/twintext-document-engine'
 PUBLIC_ENGINE_FILES = frozenset('''
-API.md LICENSE.txt NOTICE.md README.md adapters.py asset_paths.py babel_adapter.py
+API.md LICENSE.txt NOTICE.md README.md adapters.py asset_paths.py asset_downloads.py test_asset_downloads.py babel_adapter.py
 babel_compat.py babel_runtime.py backend.json cli.py constraints-linux-arm64.txt
 constraints-linux-x64.txt constraints-mac-arm64.txt constraints-mac-x64.txt
 constraints-win-x64.txt document_options.py document_preview.py download_model.py

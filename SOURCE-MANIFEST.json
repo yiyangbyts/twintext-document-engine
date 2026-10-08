@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "version": "2.0.12",
+  "version": "2.0.13",
   "engine": "twintext-document-engine",
   "protocol": 5,
   "license": "AGPL-3.0-only",
@@ -8,17 +8,18 @@
   "dependencies": "licenses/runtime/inventory.json",
   "sourceDelivery": {
     "schema": 1,
-    "version": "2.0.12",
+    "version": "2.0.13",
     "repository": "https://github.com/yiyangbyts/twintext-document-engine",
-    "release": "https://github.com/yiyangbyts/twintext-document-engine/releases/tag/v2.0.12",
-    "archive": "https://github.com/yiyangbyts/twintext-document-engine/releases/download/v2.0.12/twintext-engine-source-2.0.12.zip"
+    "release": "https://github.com/yiyangbyts/twintext-document-engine/releases/tag/v2.0.13",
+    "archive": "https://github.com/yiyangbyts/twintext-document-engine/releases/download/v2.0.13/twintext-engine-source-2.0.13.zip"
   },
   "files": {
     "engine/API.md": "49459613d8bd28d893a48efde5b01d987cb98d4e4b3f89db09adb626daf5b253",
     "engine/LICENSE.txt": "afca41723b45e26069f68d485bf906a202f892f90c801d3052f8e6296bb41454",
-    "engine/NOTICE.md": "8d4bc8df265e613c31c1c1cb9ba71267006cdc8c6a6f6b993e9479988312a26c",
+    "engine/NOTICE.md": "c29eb7724b8ceca66d53af5ad0b19685d06d401b1ca4e83cc9a065badd495321",
     "engine/README.md": "de51d9996ec755a2a0e231c68de5cc7491bf8a0a6883dcbdfce342b321e4537f",
     "engine/adapters.py": "4c22023aab9dc987b357a613739cc1232b7615b212d809d8e8d1ab89bac22334",
+    "engine/asset_downloads.py": "cdf463231348a236c32d9ebf1fc4e1fdfc68c9ca6d9e43059fad6c74f5aa578c",
     "engine/asset_paths.py": "e7cd938f6a8ca55c4d24a7000625a8a492e492aa6c31f29b7779a9c923025ab7",
     "engine/babel_adapter.py": "30fb54b0bd0f946e9f22ba9ba9772eb0d2c779caa656d30fc9c06e7ef3f3e7e6",
     "engine/babel_compat.py": "4794045787648ec8b826608bac86d5b0712806f31b3e8cbf0b2ec4446b7409af",
@@ -32,7 +33,7 @@
     "engine/constraints-win-x64.txt": "8b20b7c21d8cdfe9ed7e7b677a33c08846a2fcf4bc9a3f156492579c2716372b",
     "engine/document_options.py": "24c4c1545e556b4a44f51da9ae99bfdaac2641c0fb395f01ccec74364f761791",
     "engine/document_preview.py": "758bda94f55393bcd4c40cee184b72987f441a26c1b889ec2f3bf2b7a58afedc",
-    "engine/download_model.py": "54de85bee4c9a2fe2701a4819870d77f6115926eeb5a9b2244fe2320363b356f",
+    "engine/download_model.py": "476a8ea2d2fcf00525a7996e5b79fbcae5f488b4706830cdba7ffd9a617a9f5c",
     "engine/fetch_sources.py": "d8a3377d7f18090177c9bbc7207732b13968e8fc2b708a7f7744981cae575799",
     "engine/fixtures/README.md": "d9e82b61dc3c4ba9cdcf3c500493bb695517736a9695a893534b25c765e7597f",
     "engine/fixtures/structure-rows.json": "328aa787afbd7908e5893fa8dd376f70ad209aab0cc0a79075ab0bc096b3c311",
@@ -51,11 +52,12 @@
     "engine/service.py": "31190412c20d75d30e8edce7c1f646bf94c5e1b2a9580f1802c29599f6479c29",
     "engine/structure_plan.py": "35d5550bb689aeb18d37df256705dedc7260091d557fbbd9b43bc889896c1b38",
     "engine/temporary_workspace.py": "71e7b1c3a117d3e4f65a5dfc2cec5cdf722bc3ab16b8997d12e5eae380ef2fe8",
+    "engine/test_asset_downloads.py": "91a4d44452f0b14dfff0eb5ac860b50ef36b9c5e4d07d2258453083b7b7cb64c",
     "engine/test_babel_compat.py": "ff95885b3e37b40165bf2b16870275d363f7d7827511faba313712b7c1a36af1",
     "engine/test_babel_runtime.py": "d6249b0ef5ab065253b9788e64ebfe053575043ff4e9f5ec88fa30af85b8d0b1",
     "engine/test_document_options.py": "a7a9b3fa72cfc6658a6bb7e8e5bd64b4781b8d0112986dad0613b66bbd21a892",
     "engine/test_document_preview.py": "8b1af6325ebb7cd856d86cd87311f2f93de2eddba31510e984aa93603165e49f",
-    "engine/test_download_model.py": "898c9d767ab7be0f9981aac31aa6da42d3cc0dd9b7e275c35a668622b34e2c06",
+    "engine/test_download_model.py": "3226d331c9792422f1695080012af2147f5856bf7cf5dcfdf66539ae0956dcdf",
     "engine/test_native_artifacts.py": "c8d4841cd332781515795dd1d4b32c096fa2eb10ff56c5f5e4fbb8b61c8f616e",
     "engine/test_native_batches.py": "9ce2b1eacd0f65aaabe4204ea37b30a44d6b6bdabd90c9e8dd491c3fda04864e",
     "engine/test_native_reflow.py": "650761027bd9a306933d6b0cb0058d19ca5631177fed1bc3bd7697d10d4b6994",
@@ -307,10 +309,10 @@
     "licenses/frontend/ONNX-Runtime-Web-LICENSE-MIT": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
     "licenses/frontend/ONNX-Runtime-Web-NOTICE.md": "cca98c597f27aeb31a5c6203c6320cf26ec6cf159502462ee37a4741d205fe75",
     "runtime_probe.py": "3dae9599f75db0be9ff16b6994d59d55821c8a8fabe5728c2c4eaffca6200f71",
-    "build_engine_source.py": "58a7b2df886a894f3258b40e273029cf4c0a827b31172c0cae2dd98511bf364e",
-    "engine/source-distribution.json": "a02c5af2624d78f861a9d90638e2d851874bf8e47751bea1e5c51d2e5d71a7e6",
+    "build_engine_source.py": "1552afb9e90b4d89bd68b13db3cd47ac7d088464a422ea8b18fc83ec86fbb771",
+    "engine/source-distribution.json": "e2acf7b7a66139622926c05f2e5cd35bc320fb0e13cd78d0d161c3b619d92fcf",
     "LICENSE.txt": "afca41723b45e26069f68d485bf906a202f892f90c801d3052f8e6296bb41454",
     ".gitignore": "6e8c851dbf2987348b671708305b31255c8d12f2915069025fd32504f1eb03ef",
-    "README.md": "1d75683d0840bba552342d4b972eebfc7b346fb01bf48f725faed5765dae0390"
+    "README.md": "9090ef57a6678a8b5fcd62ddae9ea05d14e001088d421a491fae869b4f54c9ad"
   }
 }

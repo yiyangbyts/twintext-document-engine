@@ -17,6 +17,8 @@ def main():
     from babeldoc.assets.assets import warmup,generate_all_assets_file_list,verify_file
     from babeldoc.const import CACHE_FOLDER
     emit('download','下载并校验 BabelDOC 原生版面模型、字体与资源…')
+    from asset_downloads import prepare
+    prepare(ROOT,manifest['assets'],emit)
     warmup()
     listing=generate_all_assets_file_list()
     # Check the pinned XPI recipe as well as upstream verification.
