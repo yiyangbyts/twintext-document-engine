@@ -113,6 +113,10 @@ def _run_single(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,o
     if output:
         from preserved_regions import restore
         output=restore(canonical,output,getattr(config,'twintext_preserved_regions',[]),payload.get('pageIsolation') is True,config)
+        from page_geometry import restore_content
+        import pymupdf
+        with pymupdf.open(stream=pdf,filetype='pdf') as original:selected=[i for i in range(original.page_count) if config.should_translate_page(i+1)]
+        output=restore_content(output,config.twintext_content_rotations,selected,payload.get('pageIsolation') is True)
         import pymupdf
         with pymupdf.open(stream=pdf,filetype='pdf') as original,pymupdf.open(stream=output,filetype='pdf') as translated:
             if (1 if payload.get('pageIsolation') else original.page_count)!=translated.page_count:raise RuntimeError('Native PDF page alignment failed')
@@ -138,5 +142,6 @@ def _run_single(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,o
         import pymupdf
         with pymupdf.open(stream=output,filetype='pdf') as doc:count=doc.page_count
         collector.update(source=pdf,langIn=config.lang_in,langOut=config.lang_out,pages=payload.get('pages'),
-            pageCount=count,isolation=payload.get('pageIsolation') is True,canonicalSource=canonical)
+            pageCount=count,isolation=payload.get('pageIsolation') is True,canonicalSource=canonical,
+            contentRotations=config.twintext_content_rotations)
     return il_regions(document),output

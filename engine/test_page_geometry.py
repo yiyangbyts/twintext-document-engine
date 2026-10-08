@@ -1,9 +1,29 @@
 import unittest
 from types import SimpleNamespace
 import pymupdf
-from page_geometry import normalize,reference_response
+from page_geometry import normalize,reference_response,restore_content,content_rotation
 
 class GeometryTests(unittest.TestCase):
+ def test_sideways_body_without_rotate_is_parsed_upright_and_restored(self):
+  with pymupdf.open() as pdf:
+   for angle in (90,180,270):
+    p=pdf.new_page(width=600,height=800)
+    for n in range(8):p.insert_text((180 if angle==90 else 450 if angle==270 else 480,650 if angle==90 else 160 if angle==270 else 600-n*22),'Body prose describing the study and its measurements.',rotate=angle,fontsize=9)
+    p.insert_text((60,760),'Horizontal footer')
+   data=pdf.tobytes()
+  config=SimpleNamespace(should_translate_page=lambda n:True);canonical,_=normalize(data,config)
+  self.assertEqual(config.twintext_content_rotations,{0:90,1:180,2:270})
+  restored=restore_content(canonical,config.twintext_content_rotations)
+  with pymupdf.open(stream=data,filetype='pdf') as source,pymupdf.open(stream=canonical,filetype='pdf') as upright,pymupdf.open(stream=restored,filetype='pdf') as output:
+   for n in range(3):
+    self.assertEqual(content_rotation(upright[n]),0);self.assertEqual(source[n].rect,output[n].rect)
+    a=source[n].get_pixmap().samples;b=output[n].get_pixmap().samples
+    self.assertLess(sum(abs(x-y) for x,y in zip(a,b))/len(a),.2)
+ def test_sideways_margin_labels_do_not_rotate_horizontal_body(self):
+  with pymupdf.open() as pdf:
+   p=pdf.new_page();p.insert_text((70,110),'An ordinary horizontal scientific paragraph with enough words to be recognized.')
+   for y in (100,300,500):p.insert_text((22,y),'Author Manuscript',rotate=270)
+   self.assertEqual(content_rotation(p),0)
  def source(self):
   with pymupdf.open() as d:
    for rotation in (0,90,180,270):

@@ -1,5 +1,5 @@
 """Exercise actual downloader destinations without downloading upstream assets."""
-import hashlib
+import hashlib,io
 import json
 import os
 from pathlib import Path
@@ -13,6 +13,12 @@ import download_model
 
 
 class DownloadDestination(unittest.TestCase):
+    def test_progress_json_remains_utf8_readable_with_windows_gbk_stdout(self):
+        pipe=io.BytesIO();stdout=io.TextIOWrapper(pipe,encoding='gbk')
+        message='下载并校验 BabelDOC 原生版面模型、字体与资源…'
+        with patch('sys.stdout',stdout):download_model.emit('download',message,13)
+        raw=pipe.getvalue();self.assertTrue(all(n<128 for n in raw))
+        self.assertEqual(json.loads(raw.decode('utf-8'))['message'],message)
     def run_download(self, corrupt=False):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp)/'managed';root.mkdir()

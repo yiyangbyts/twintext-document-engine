@@ -1,4 +1,16 @@
 """Keep ignored regions as source PDF vectors, including original encodings."""
+def restore_page(source,target,index,regions):
+    """Restore one preview page without saving/subsetting a complete PDF."""
+    import pymupdf
+    page=source[index];clips=[]
+    for region in regions:
+        if region.get('pageIndex')!=index:continue
+        r=region['rect'];clip=pymupdf.Rect(r['left']*page.rect.width,r['top']*page.rect.height,(r['left']+r['width'])*page.rect.width,(r['top']+r['height'])*page.rect.height)
+        clip=(clip+(-.8,-.8,.8,.8)) & page.rect
+        if not clip.is_empty:clips.append(clip);target.add_redact_annot(clip,fill=None)
+    if clips:target.apply_redactions(images=0,graphics=0,text=0)
+    for clip in clips:target.show_pdf_page(clip,source,index,clip=clip,overlay=True)
+
 def restore(source,translated,regions,isolated=False,config=None):
     if not regions:return translated
     import pymupdf

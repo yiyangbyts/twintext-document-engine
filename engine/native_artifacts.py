@@ -80,6 +80,9 @@ def finalize(source,output,preserved,config,isolation=False,canonical=None):
     from preserved_regions import restore
     import pymupdf
     output=restore(canonical or source,output,preserved,isolation,config)
+    from page_geometry import restore_content
+    with pymupdf.open(stream=source,filetype='pdf') as original:selected=[i for i in range(original.page_count) if config.should_translate_page(i+1)]
+    output=restore_content(output,getattr(config,'twintext_content_rotations',{}),selected,isolation)
     with pymupdf.open(stream=source,filetype='pdf') as original,pymupdf.open(stream=output,filetype='pdf') as translated:
         if translated.page_count!=(1 if isolation else original.page_count):raise ValueError('Native PDF page alignment failed')
         if not isolation and config.pages:
@@ -111,6 +114,7 @@ def reflow(artifact,folder,raw,cancel):
         no_dual=True,only_include_translated_page=artifact['isolation'],watermark_output_mode=WatermarkOutputMode.NoWatermark)
     config.progress_monitor=QuietProgress(cancel);config.primary_font_family=options(raw)['fontFamily']
     config.twintext_preserved_regions=artifact['preserved']
+    config.twintext_content_rotations=artifact.get('contentRotations',{})
     class ReflowTypesetting(make_typesetter(Typesetting,raw)):
         def render_page(self,page):
             page.pdf_paragraph=[p for p in page.pdf_paragraph if p.debug_id not in artifact['preserved_ids']]

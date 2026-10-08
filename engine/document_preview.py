@@ -118,6 +118,11 @@ class SnapshotRenderer:
                 if kind!='null':pdf.xref_set_key(pdf[index].xref,name,value)
             config.raise_if_cancelled()
             rendered=pdf[index]
+            if self.options.get('preservedRegions'):
+                from preserved_regions import restore_page
+                with pymupdf.open(self.options['source']) as source:restore_page(source,rendered,index,self.options['preservedRegions'])
+            angle=self.options.get('contentRotations',{}).get(index,0)
+            if angle:rendered.set_rotation((-angle)%360)
             # Bound raster memory for posters / unusually large PDF pages.
             scale=min(1.5,(12_000_000/max(1,rendered.rect.width*rendered.rect.height))**.5)
             output=rendered.get_pixmap(matrix=pymupdf.Matrix(scale,scale),alpha=False).tobytes('png')
@@ -172,7 +177,9 @@ class PreviewStream:
         options={'source':str(config.input_file),'prepared':str(config.get_working_file_path('input.pdf')),
             'root':str(config.get_working_file_path('previews')),'langIn':config.lang_in,'langOut':config.lang_out,
             'currentPage':self.current_page,'documentOptions':getattr(config,'twintext_document_options',{}),
-            'originalRotations':getattr(config,'twintext_original_rotations',{})}
+            'originalRotations':getattr(config,'twintext_source_rotations',getattr(config,'twintext_original_rotations',{})),
+            'contentRotations':getattr(config,'twintext_content_rotations',{}),
+            'preservedRegions':getattr(config,'twintext_preserved_regions',[])}
         self.options=copy.deepcopy(options['documentOptions']);self.worker_options=options
         self.cancel=threading.Event();self.restart_count=0
         # Hidden Windows hosts and native DLL output must not be part of a

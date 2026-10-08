@@ -4,7 +4,7 @@ import hashlib,json,os
 from pathlib import Path
 ROOT=Path(__file__).resolve().parent
 
-def emit(stage,message,progress=None): print(json.dumps({'stage':stage,'message':message,'progress':progress},ensure_ascii=False),flush=True)
+def emit(stage,message,progress=None): print(json.dumps({'stage':stage,'message':message,'progress':progress},ensure_ascii=True),flush=True)
 def main():
     manifest=json.loads((ROOT/'model-manifest.json').read_text())
     if manifest['backend']!='babeldoc':raise ValueError('Unsupported document engine')

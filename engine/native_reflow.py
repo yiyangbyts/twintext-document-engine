@@ -9,6 +9,16 @@ from functools import lru_cache
 from pathlib import Path
 
 PROFILE='native-reflow-2.0.10-v1'
+_visible_cache=None
+
+@lru_cache(maxsize=16)
+def _verified_digest(path,size,mtime,ctime):
+    from native_batches import digest
+    return digest(path)
+
+def verified_digest(path):
+    path=Path(path);stat=path.stat()
+    return _verified_digest(str(path.resolve()),stat.st_size,stat.st_mtime_ns,stat.st_ctime_ns)
 
 
 @lru_cache(maxsize=1)
@@ -73,12 +83,11 @@ def save_manifest(folder,source,selected,count,parts):
 
 
 def load_manifest(path):
-    from native_batches import digest
     path=Path(path)
     if not path.is_file():raise ValueError('native_artifact_expired')
     value=json.loads(path.read_text(encoding='utf-8'))
     if value.get('profile')!=PROFILE or not isinstance(value.get('parts'),list):raise ValueError('native_artifact_expired')
-    if digest(value['sourceFile'])!=value.get('sourceSHA256'):raise ValueError('Reflow source changed')
+    if verified_digest(value['sourceFile'])!=value.get('sourceSHA256'):raise ValueError('Reflow source changed')
     selected=value.get('pages');count=value.get('pageCount')
     if not isinstance(count,int) or isinstance(count,bool) or count<1 or not isinstance(selected,list) or not selected or any(type(n) is not int or not 0<=n<count for n in selected):raise ValueError('Invalid reflow page range')
     covered=set()
@@ -91,13 +100,40 @@ def load_manifest(path):
     return path.parent,value
 
 
-def load_part(folder,part):
-    from native_batches import digest
-    path=folder/part['path']
-    if not path.is_file() or path.is_symlink() or digest(path)!=part['sha256']:raise ValueError('native_artifact_expired')
+@lru_cache(maxsize=1)
+def _decoded_part(path,size,mtime,ctime):
     with gzip.open(path,'rb') as stream:artifact=decode(json.load(stream),classes())
     if len(artifact['document'].page)>16:raise ValueError('Invalid reflow size')
     return artifact
+
+def load_part(folder,part,cache=True):
+    path=folder/part['path']
+    if not path.is_file() or path.is_symlink() or verified_digest(path)!=part['sha256']:raise ValueError('native_artifact_expired')
+    stat=path.stat()
+    loader=_decoded_part if cache else _decoded_part.__wrapped__
+    return loader(str(path.resolve()),stat.st_size,stat.st_mtime_ns,stat.st_ctime_ns)
+
+def focus_preview(artifact,folder,index,raw,cancel):
+    """Warm the raster writer for repeated edits; save the full PDF afterwards."""
+    global _visible_cache
+    import copy,pymupdf
+    from document_preview import SnapshotRenderer,QuietProgress
+    import hashlib
+    key=(str(folder.resolve()),hashlib.sha256(artifact['prepared']).digest())
+    if not _visible_cache or _visible_cache[0]!=key:
+        folder.mkdir(parents=True,exist_ok=True)
+        source=folder/'source.pdf';source.write_bytes(artifact.get('canonicalSource',artifact['source']))
+        prepared=folder/'prepared.pdf';prepared.write_bytes(artifact['prepared'])
+        with pymupdf.open(stream=artifact['source'],filetype='pdf') as pdf:rotations={p.number:p.rotation for p in pdf}
+        renderer=SnapshotRenderer(dict(source=str(source),prepared=str(prepared),root=str(folder/'work'),
+            langIn=artifact['langIn'],langOut=artifact['langOut'],documentOptions=raw,
+            originalRotations=rotations,contentRotations=artifact.get('contentRotations',{}),preservedRegions=artifact['preserved']),cancel)
+        _visible_cache=(key,renderer)
+    renderer=_visible_cache[1];renderer.config.progress_monitor=QuietProgress(cancel)
+    page=copy.deepcopy(next(p for p in artifact['document'].page if p.page_number==index))
+    page.pdf_paragraph=[p for p in page.pdf_paragraph if p.debug_id not in artifact['preserved_ids']]
+    return renderer.render(dict(page=page,pageCount=artifact['pageCount'],references=copy.deepcopy(artifact['references'].get(index,[])),
+        revision=1,paragraphs=[],completedParagraphs=len(page.pdf_paragraph),totalParagraphs=len(page.pdf_paragraph),documentOptions=raw))
 
 
 def run(payload,folder,cancel,on_preview=None):
@@ -110,15 +146,20 @@ def run(payload,folder,cancel,on_preview=None):
     with pymupdf.open(manifest['sourceFile']) as output:
         toc=output.get_toc(simple=False)
         for part in parts:
-            cancelled(cancel);artifact=load_part(root,part);offset=part['first'];local=focus-offset
+            cancelled(cancel);artifact=load_part(root,part,cache=part['first']<=focus<=part['last']);offset=part['first'];local=focus-offset
             if on_preview and offset<=focus<=part['last'] and focus in selected:
-                visible={**artifact,'document':copy.copy(artifact['document']),'pages':str(local+1)}
-                visible['document'].page=[copy.deepcopy(p) for p in artifact['document'].page if p.page_number==local]
-                result=reflow(visible,folder/f'visible-{offset}',payload.get('documentOptions'),cancel)
-                with pymupdf.open(stream=base64.b64decode(result['pdf']),filetype='pdf') as full,pymupdf.open() as one:
-                    one.insert_pdf(full,from_page=local,to_page=local)
-                    on_preview(dict(type='native-page-preview',profile='native-document-9029-r1',pageIndex=focus,revision=1,cursor=1,pdf=base64.b64encode(one.tobytes()).decode()))
-                del visible,result
+                try:
+                    frame=focus_preview(artifact,root/'.visible-cache'/str(offset),local,payload.get('documentOptions'),cancel)
+                    on_preview({**frame,'pageIndex':focus,'cursor':1})
+                except Exception:
+                    cancelled(cancel)
+                    visible={**artifact,'document':copy.copy(artifact['document']),'pages':str(local+1)}
+                    visible['document'].page=[copy.deepcopy(p) for p in artifact['document'].page if p.page_number==local]
+                    result=reflow(visible,folder/f'visible-{offset}',payload.get('documentOptions'),cancel)
+                    with pymupdf.open(stream=base64.b64decode(result['pdf']),filetype='pdf') as full,pymupdf.open() as one:
+                        one.insert_pdf(full,from_page=local,to_page=local)
+                        on_preview(dict(type='native-page-preview',profile='native-document-9029-r1',pageIndex=focus,revision=1,cursor=1,pdf=base64.b64encode(one.tobytes()).decode()))
+                    del visible,result
             cancelled(cancel)
             result=reflow(artifact,folder/f'part-{offset}',payload.get('documentOptions'),cancel)
             with pymupdf.open(stream=base64.b64decode(result['pdf']),filetype='pdf') as translated:

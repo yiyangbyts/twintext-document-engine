@@ -114,7 +114,7 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
         checkpoint=Path(str(destination)+'.parts') if payload.get('outputFile') else folder/'parts'
         checkpoint.mkdir(parents=True,exist_ok=True)
         if not isinstance(source,Path):shutil.copyfile(source_file,checkpoint/'source.pdf');source_file=checkpoint/'source.pdf'
-        signature=hashlib.sha256(json.dumps(dict(source=digest(source_file),pages=selected,cacheKey=payload.get('cacheKey'),
+        signature=hashlib.sha256(json.dumps(dict(geometryRevision='sideways-2.0.11',source=digest(source_file),pages=selected,cacheKey=payload.get('cacheKey'),
             sourceLanguage=payload.get('sourceLanguage'),targetLanguage=payload.get('targetLanguage'),documentOptions=payload.get('documentOptions')),sort_keys=True).encode()).hexdigest()
         failed=[];export=[];completed=set();revisions={};selected_set=set(selected);reflow_parts=[]
         with pymupdf.open(source_file) as assembled:
