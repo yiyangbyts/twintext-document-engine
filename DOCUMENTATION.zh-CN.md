@@ -1,6 +1,6 @@
 # TwinText Document Engine
 
-TwinText adapts BabelDOC for PDF translation while preserving document structure. It addresses common problems with mixed text and formulas, merged reference entries, numbered lists, tables of contents and rotated pages. Paragraph previews let readers see available translations while processing continues; translation retries and failed-page recovery support interrupted jobs.
+TwinText adapts BabelDOC for PDF translation while preserving document structure. It addresses common problems with mixed text and formulas, merged reference entries, numbered lists, tables of contents and rotated pages. Paragraph previews let readers see available translations while processing continues; translation retries, bounded document batches and disk checkpoints support long documents and interrupted jobs.
 
 The engine runs independently through a CLI or HTTP interface and supports compatible translation providers. See [build and run instructions](engine/README.md) and the [API](engine/API.md).
 

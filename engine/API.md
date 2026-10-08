@@ -8,7 +8,9 @@ The current concurrency/format/view controls remain available for incremental us
 
 - `GET /health`: protocol, engine identifier, capabilities and activity. Require
   protocol 5 and `engine-structure-2.0.5-v1` before starting a new client session.
-- `POST /v1/jobs`: create a job. `pdf` is base64 (PDF up to 128 MB);
+- `POST /v1/jobs`: create a job. `sourceFile` is a local PDF path;
+  use `outputFile` for the resulting PDF and `cacheKey` for resumable batches.
+  `pdf` (base64) remains available for small in-memory clients;
   `nativeExport: true`, `documentExport: true`, optional `pages: "1-12"`,
   `sourceLanguage`, `targetLanguage`, `currentPage` (zero-based), `concurrency`.
   `documentOptions` contains fontScale/lineHeightScale percentages, fontFamily
@@ -25,7 +27,10 @@ The current concurrency/format/view controls remain available for incremental us
 - `POST /v1/jobs/{id}/format`: `{documentOptions}` for preview typography.
 - `POST /v1/jobs/{id}/cancel`: cancel and stop awaiting translation replies.
 - `GET /v1/jobs/{id}/result`: complete PDF, pageCount, pipeline, optional artifactId
-  and exportPages. Preview warnings do not imply that the final PDF failed.
+  and exportPages. File-backed results return `pdfFile`, `size`, `sha256` and
+  `failedPages` without transferring the full PDF in JSON. Require capability
+  `bounded-native-files-2.0.9` for this mode. Optional `batchPages` (1–16) caps
+  native part size; available memory and PDF size can reduce it further. Preview warnings do not imply that the final PDF failed.
 - `POST /v1/jobs/{id}/release`: release completed job data.
 - `GET /v1/source`: redirect to the exact version's publicly available GitHub
   source archive, using source-distribution.json. Older installations with a local
@@ -46,3 +51,9 @@ Error snapshots distinguish translator failures, document-page exceptions,
 resource/environment failures and transport failures. A client may recover only
 failed document pages with the same engine. Never mistake an unchanged source
 PDF or a failed provider request for a completed translation.
+
+Large documents use the same native pipeline in bounded parts (at most 16 pages),
+then assemble selected pages in their original positions. Completed parts are
+checksummed on disk and reused on restart. Content failures can be narrowed to
+a single page; original content and a failure warning remain visible. Credentials,
+quota, missing environment and disk failures remain explicit job errors.

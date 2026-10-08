@@ -84,10 +84,9 @@ def main(argv=None):
         except (OSError, ValueError, KeyError) as error:
             print(json.dumps(dict(type='preview-warning', message=str(error))), file=sys.stderr, flush=True)
     try:
-        pdf = args.input.read_bytes()
-        if not pdf.startswith(b'%PDF') or len(pdf) > 128 * 1024 * 1024:
-            raise ValueError('Expected PDF up to 128 MB')
-        payload = dict(nativeExport=True, documentExport=True, pages=args.pages,
+        from service import pdf_input
+        pdf = pdf_input(dict(sourceFile=str(args.input.resolve())))
+        payload = dict(nativeExport=True, documentExport=True, pages=args.pages, outputFile=str(args.output.resolve()),
                        sourceLanguage=args.source, targetLanguage=args.target, concurrency=args.concurrency,
                        documentOptions=dict(ignoreReferences=args.ignore_references, ignoreHeadersFooters=args.ignore_headers_footers))
         from babel_adapter import run
@@ -99,8 +98,9 @@ def main(argv=None):
             raise RuntimeError('The document engine produced no PDF')
         args.output.parent.mkdir(parents=True, exist_ok=True)
         temporary = args.output.with_name(args.output.name + '.tmp')
-        temporary.write_bytes(output)
-        temporary.replace(args.output)
+        if not isinstance(output, Path):
+            temporary.write_bytes(output)
+            temporary.replace(args.output)
         print(json.dumps(dict(type='complete', output=str(args.output.resolve())), ensure_ascii=False), flush=True)
         return 0
     except KeyboardInterrupt:

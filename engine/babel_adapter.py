@@ -23,12 +23,29 @@ def il_regions(document):
     return result
 
 def run(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,on_preview=None,on_control=None,collector=None):
+    if bridge and (isinstance(pdf,Path) or len(pdf)>8*1024*1024):
+        from native_batches import run_document
+        return run_document(pdf,folder,payload,_run_single,bridge,progress,cancel_event,on_preview,on_control,collector)
+    # Even compact books need bounded IL; compressed PDF bytes can be small.
+    if bridge:
+        import pymupdf
+        with pymupdf.open(stream=pdf,filetype='pdf') as document:
+            if document.page_count>16:
+                from native_batches import run_document
+                return run_document(pdf,folder,payload,_run_single,bridge,progress,cancel_event,on_preview,on_control,collector)
+    if isinstance(pdf,Path):pdf=pdf.read_bytes()
+    return _run_single(pdf,folder,payload,bridge,progress,cancel_event,on_preview,on_control,collector)
+
+
+def _run_single(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,on_preview=None,on_control=None,collector=None):
     from asset_paths import configure
     configure()
     from babeldoc.translator.translator import BaseTranslator
     from babeldoc.format.pdf.translation_config import TranslationConfig,WatermarkOutputMode
     from babeldoc.format.pdf.high_level import do_translate,get_translation_stage
     from babeldoc.progress_monitor import ProgressMonitor
+    from babel_runtime import monitor_type
+    ProgressMonitor=monitor_type(ProgressMonitor)
     from babel_runtime import layout_model
     from babel_compat import install_graphics_copy,input_documents
     install_graphics_copy()
@@ -47,6 +64,7 @@ def run(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,on_previe
                 if not isinstance(result,str):raise ValueError('Translation provider must return text')
                 return result
             except Exception as error:
+                error.twintext_translation_failure=True
                 if not translation_failures:translation_failures.append(error)
                 raise
         def do_llm_translate(self,text,rate_limit_params=None):raise NotImplementedError("Use plain translation with BabelDOC formula placeholders")
@@ -56,7 +74,7 @@ def run(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,on_previe
     config=TranslationConfig(translator=translator,input_file=source,lang_in=translator.lang_in,lang_out=translator.lang_out,
         doc_layout_model=layout_model(),pages=str(payload.get('pageIndex',0)+1) if not bridge else payload.get('pages'),
         output_dir=folder/'output',working_dir=folder/'work',debug=bridge is None,no_dual=True,auto_extract_glossary=False,
-        disable_rich_text_translate=False,skip_translation=bridge is None,min_text_length=2,qps=2,pool_max_workers=max(1,min(16,int(payload.get("concurrency",8)))),
+        disable_rich_text_translate=False,skip_translation=bridge is None,min_text_length=2,qps=max(2,min(16,int(payload.get('concurrency',3))*2)),pool_max_workers=max(2,min(16,int(payload.get("concurrency",3))*2)),
         formular_char_pattern=r'[⟨⟩⟪⟫⟮⟯⌈⌉⌊⌋]',
         auto_enable_ocr_workaround=True,watermark_output_mode=WatermarkOutputMode.NoWatermark,
         only_include_translated_page=bridge is None or payload.get('pageIsolation') is True)
@@ -64,6 +82,7 @@ def run(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,on_previe
     canonical,rotations=normalize(pdf,config)
     source.write_bytes(canonical)
     config.twintext_original_rotations=rotations
+    config.twintext_structure_state=payload.get('_structureState',{})
     # Keep unselected pages so source/translation retain identical page indexes.
     # BabelDOC calls finish_callback from on_finish when a cancel event exists,
     # including successful synchronous completion. Exceptions still propagate

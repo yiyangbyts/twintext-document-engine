@@ -124,25 +124,41 @@ def reflow(artifact,folder,raw,cancel):
     output=finalize(artifact['source'],Path(result.mono_pdf_path).read_bytes(),artifact['preserved'],config,artifact['isolation'],canonical)
     return {'pdf':base64.b64encode(output).decode(),'pageCount':artifact['pageCount'],'pipeline':'native-pdf-9020','engine':'babeldoc'}
 
-def comparison(payload):
-    """Vector source/translation spreads; one spread per selected source page."""
+def open_pdf(payload,field):
     import pymupdf
-    source=base64.b64decode(payload['pdf'],validate=True);translated=base64.b64decode(payload['translatedPDF'],validate=True)
+    from service import pdf_input
+    data=pdf_input(payload,field)
+    return pymupdf.open(data) if isinstance(data,Path) else pymupdf.open(stream=data,filetype='pdf')
+
+
+def exported(output,payload,pipeline,count):
+    if payload.get('outputFile'):
+        from native_batches import digest
+        destination=Path(payload['outputFile'])
+        if any(destination.resolve()==Path(payload[name]).resolve() for name in ('sourceFile','translatedFile') if payload.get(name)):raise ValueError('Cannot overwrite input PDF')
+        destination.parent.mkdir(parents=True,exist_ok=True)
+        temporary=destination.with_name(destination.name+'.tmp');output.save(temporary,garbage=3,deflate=True);temporary.replace(destination)
+        return dict(pdfFile=str(destination),size=destination.stat().st_size,sha256=digest(destination),pageCount=count,pipeline=pipeline)
+    return dict(pdf=base64.b64encode(output.tobytes(garbage=3,deflate=True)).decode(),pageCount=count,pipeline=pipeline)
+
+
+def comparison(payload):
+    import pymupdf
     first,last=payload.get('first'),payload.get('last')
-    with pymupdf.open(stream=source,filetype='pdf') as original,pymupdf.open(stream=translated,filetype='pdf') as target,pymupdf.open() as output:
+    with open_pdf(payload,'pdf') as original,open_pdf(payload,'translatedPDF') as target,pymupdf.open() as output:
         if original.page_count!=target.page_count or any(isinstance(n,bool) or not isinstance(n,int) for n in (first,last)) or not 0<=first<=last<original.page_count:raise ValueError('Invalid comparison range')
         for index in range(first,last+1):
             a,b=original[index],target[index];gap=12
             page=output.new_page(width=a.rect.width+b.rect.width+gap,height=max(a.rect.height,b.rect.height))
             page.show_pdf_page(pymupdf.Rect(0,0,a.rect.width,a.rect.height),original,index)
             page.show_pdf_page(pymupdf.Rect(a.rect.width+gap,0,a.rect.width+gap+b.rect.width,b.rect.height),target,index)
-        return {'pdf':base64.b64encode(output.tobytes(garbage=3,deflate=True)).decode(),'pageCount':last-first+1,'pipeline':'native-comparison-9035'}
+        return exported(output,payload,'native-comparison-9035',last-first+1)
 
 
 def extract(payload):
     import pymupdf
-    data=base64.b64decode(payload['translatedPDF'],validate=True);first,last=payload.get('first'),payload.get('last')
-    with pymupdf.open(stream=data,filetype='pdf') as document,pymupdf.open() as output:
+    first,last=payload.get('first'),payload.get('last')
+    with open_pdf(payload,'translatedPDF') as document,pymupdf.open() as output:
         if any(isinstance(n,bool) or not isinstance(n,int) for n in (first,last)) or not 0<=first<=last<document.page_count:raise ValueError('Invalid PDF export range')
         output.insert_pdf(document,from_page=first,to_page=last)
-        return {'pdf':base64.b64encode(output.tobytes(garbage=3,deflate=True)).decode(),'pageCount':last-first+1,'pipeline':'native-export-9035'}
+        return exported(output,payload,'native-export-9035',last-first+1)

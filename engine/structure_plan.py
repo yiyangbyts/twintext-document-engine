@@ -142,7 +142,7 @@ def section_heading(row, body_size):
         row.get('fontBold') and (row.get('fontSize') or body_size) > body_size * 1.08 and len(row['text'].split()) <= 12)
 
 
-def analyze_rows(pages, settings=None, check=lambda: None):
+def analyze_rows(pages, settings=None, check=lambda: None,state=None):
     """Input is source rows, never already translated text. Does not mutate it."""
     settings = settings or {}
     if len(pages) > 10000:
@@ -152,7 +152,7 @@ def analyze_rows(pages, settings=None, check=lambda: None):
         for row in page['rows']:
             if margin(row):
                 repeated[margin_key(row)].add(page['pageIndex'])
-    entries, exclusions, in_refs, previous_page = [], [], False, None
+    entries, exclusions, in_refs, previous_page = [], [], bool(state and state.get('inReferences')), None
     for page in sorted(pages, key=lambda p: p['pageIndex']):
         check()
         index = page['pageIndex']
@@ -260,6 +260,7 @@ def analyze_rows(pages, settings=None, check=lambda: None):
                 entries.extend(joined_entry('list', index, rows, label) for rows, label, _, _ in group)
     for ordinal, entry in enumerate(entries):
         entry['id'] = f"{entry['kind']}-{entry['pageIndex']}-{ordinal}"
+    if state is not None:state['inReferences']=in_refs
     return dict(revision=REVISION, entries=entries, exclusions=exclusions)
 
 
@@ -269,4 +270,4 @@ def analyze(document, config):
     for page in document.page:
         check()
         pages.append(dict(pageIndex=page.page_number, rows=rows_from_page(page)))
-    return analyze_rows(pages, getattr(config, 'twintext_document_options', None), check)
+    return analyze_rows(pages, getattr(config, 'twintext_document_options', None), check,getattr(config,'twintext_structure_state',None))

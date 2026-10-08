@@ -9,6 +9,20 @@ MAX_BYTES=192*1024*1024
 MAX_ACTIVE_JOBS=16
 MAX_RETAINED_JOBS=64
 
+def pdf_input(payload,field='pdf'):
+    file_key='sourceFile' if field=='pdf' else 'translatedFile'
+    if file_key in payload:
+        value=payload[file_key]
+        if not isinstance(value,str) or not value or '\x00' in value:raise ValueError('Invalid PDF file path')
+        path=Path(value)
+        if not path.is_file():raise FileNotFoundError('PDF file unavailable')
+        with path.open('rb') as stream:
+            if b'%PDF' not in stream.read(1024):raise ValueError('Expected a PDF file')
+        return path
+    data=base64.b64decode(payload[field],validate=True)
+    if not data.startswith(b'%PDF'):raise ValueError('Expected a PDF')
+    return data
+
 def failure_code(error,stage):
     # Page isolation cannot repair missing dependencies, exhausted memory/disk
     # or worker timeouts. Repeating the full pipeline per page makes those worse.
@@ -28,10 +42,10 @@ class Jobs:
         self.key=key;self.model=model;self.jobs={};self.lock=threading.RLock();self.pool=concurrent.futures.ThreadPoolExecutor(max_workers=1);self.adapter=None;self.artifacts=None;self.translator_factory=translator_factory
     def assemble(self,payload):
         import pymupdf
-        pdf=base64.b64decode(payload['pdf'],validate=True)
+        pdf=pdf_input(payload)
         parts=payload.get('parts')
         if not isinstance(parts,list) or not parts or len(parts)>10000:raise ValueError('Invalid page recovery parts')
-        with pymupdf.open(stream=pdf,filetype='pdf') as document:
+        with (pymupdf.open(pdf) if isinstance(pdf,Path) else pymupdf.open(stream=pdf,filetype='pdf')) as document:
             count=document.page_count;seen=set();toc=document.get_toc(simple=False)
             for part in parts:
                 index=part.get('pageIndex')
@@ -120,13 +134,15 @@ class Jobs:
                 result=self.assemble(payload)
             elif self.key=='babeldoc':
                 from babel_adapter import run
-                pdf=base64.b64decode(payload['pdf'],validate=True)
-                if not pdf.startswith(b'%PDF') or len(pdf)>128*1024*1024:raise ValueError('Expected PDF up to 128 MB')
+                pdf=pdf_input(payload)
                 translator=self.translator_factory(payload,job['cancel_event']) if self.translator_factory else None
                 def bridge(text):
                     if not isinstance(text,str):raise ValueError('Translation bridge accepts text only')
                     if translator:
-                        try:return translator(text)
+                        try:
+                            translated=translator(text)
+                            if translated==text and len(re.findall(r'[A-Za-z]',text))>=12:bridge.retained_count+=1
+                            return translated
                         except Exception:
                             if not job['cancelled']:job['bridgeFailure']=True
                             raise
@@ -137,14 +153,17 @@ class Jobs:
                     with self.lock:job['requests'].pop(request_id,None)
                     if request.get('error'):
                         job['bridgeFailure']=True;raise RuntimeError(request['error'])
-                    return request['translation']
+                    translated=request['translation']
+                    if translated==text and len(re.findall(r'[A-Za-z]',text))>=12:bridge.retained_count+=1
+                    return translated
+                bridge.retained_count=0
                 def progress(**event):
                     with self.lock:
                         now=time.monotonic();old=job.get('progress',{}).get('stage');new=event.get('stage')
                         if new and new!=old:
                             if old:job['stageTimings'][old]=job['stageTimings'].get(old,0)+round((now-job['stageStartedMonotonic'])*1000)
                             job['stageStartedMonotonic']=now
-                        job['lastActivity']=time.time();job['progress']={k:v for k,v in event.items() if k in ('type','stage','overall_progress','stage_current','stage_total','page_count')}
+                        job['lastActivity']=time.time();job['progress']={k:v for k,v in event.items() if k in ('type','stage','overall_progress','stage_current','stage_total','page_count','completed_pages','total_pages','batch_first','batch_last')}
                 def preview(event):
                     with self.lock:
                         if job['cancelled']:return
@@ -183,9 +202,15 @@ class Jobs:
                             if job['cancelled']:raise
                             from document_preview import preview_failure
                             job.setdefault('exportWarnings',[]).append(preview_failure(error,'export-text',payload.get('currentPage',0)))
+                    if collector and collector.get('batched'):
+                        job['exportPages']=collector.get('exportPages',[]);job['failedPages']=collector.get('failedPages',[])
                     result={'regions':regions}
                 if pdf_result:
-                    result['pdf']=base64.b64encode(pdf_result).decode()
+                    if isinstance(pdf_result,Path):
+                        from native_batches import digest
+                        result.update(pdfFile=str(pdf_result),size=pdf_result.stat().st_size,sha256=digest(pdf_result))
+                    else:result['pdf']=base64.b64encode(pdf_result).decode()
+                    result['failedPages']=job.pop('failedPages',[])
                     result['pageCount']=job.get('progress',{}).get('page_count')
                     result['engine']='babeldoc';result['pipeline']='native-pdf-9020'
                     if payload.get('documentExport'):
@@ -283,7 +308,7 @@ def handler(jobs,config):
                     if delivery.get('schema')!=1 or delivery.get('repository')!=repository or not isinstance(version,str) or not re.fullmatch(r'\d+\.\d+\.\d+',version) or delivery.get('archive')!=expected:
                         return self.send(503,{'error':'Invalid source delivery metadata'})
                     self.send_response(302);self.send_header('Location',expected);self.send_header('Cache-Control','no-store');self.send_header('Content-Length','0');self.end_headers();return
-                if self.path=='/health':return self.send(200,{**jobs.health(),'ready':True,'protocol':5,'engine':config['id'],'backend':jobs.key,'capabilities':['native-pdf-9020','cancellable-bridge','native-paragraph-preview-9031','engine-structure-2.0.5-v1','native-reflow-export-9035']})
+                if self.path=='/health':return self.send(200,{**jobs.health(),'ready':True,'protocol':5,'engine':config['id'],'backend':jobs.key,'capabilities':['native-pdf-9020','cancellable-bridge','native-paragraph-preview-9031','engine-structure-2.0.5-v1','native-reflow-export-9035','bounded-native-files-2.0.9']})
                 location=urlsplit(self.path)
                 if re.fullmatch(r'/v1/jobs/[^/]+(?:/result)?',location.path):
                     parts=location.path.split('/');query=parse_qs(location.query)

@@ -20,7 +20,7 @@ babel_compat.py babel_runtime.py backend.json cli.py constraints-linux-arm64.txt
 constraints-linux-x64.txt constraints-mac-arm64.txt constraints-mac-x64.txt
 constraints-win-x64.txt document_options.py document_preview.py download_model.py
 fetch_sources.py fixtures/README.md fixtures/structure-rows.json ignored_regions.py
-install.py model-manifest.json native_artifacts.py output_safety.py page_geometry.py
+install.py model-manifest.json native_batches.py test_native_batches.py native_artifacts.py output_safety.py page_geometry.py
 preserved_regions.py reference_layout.py requirements.txt service.py structure_plan.py
 test_babel_compat.py test_babel_runtime.py test_document_options.py test_document_preview.py
 test_download_model.py test_native_artifacts.py test_native_service.py test_output_safety.py
