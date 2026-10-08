@@ -10,7 +10,7 @@ tables of contents and rotated pages.
 - Expose read-only structured pages for responsive reading typography.
 - Run independently through a CLI or HTTP interface with compatible providers.
 
-Source snapshot for TwinText 2.0.13. Copyright (C) 2026 TwinText, for TwinText
+Source snapshot for TwinText 2.0.14. Copyright (C) 2026 TwinText, for TwinText
 modifications, licensed under [AGPL-3.0-only](LICENSE.txt). You may use, modify and
 redistribute this code under that license. Third-party components retain their
 original copyrights and licenses. Provided without warranty except as required
@@ -18,7 +18,7 @@ by law or separately agreed.
 
 [Documentation](DOCUMENTATION.md) · [Third-party notices](THIRD-PARTY-NOTICES.md) ·
 [Changes](engine/NOTICE.md) · [Build and run](engine/README.md) ·
-[Source downloads](https://github.com/yiyangbyts/twintext-document-engine/releases/tag/v2.0.13)
+[Source downloads](https://github.com/yiyangbyts/twintext-document-engine/releases/tag/v2.0.14)
 
 Versioned source and pinned core upstream archives are available without payment
 or activation. Checksums accompany the release assets.
