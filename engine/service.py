@@ -102,7 +102,11 @@ class Jobs:
         try:
             job['state']='running';job['startedMonotonic']=time.monotonic();job['stageStartedMonotonic']=job['startedMonotonic'];job['stageTimings']={}
             if job['cancelled']:raise RuntimeError('Cancelled')
-            if self.key=='babeldoc' and payload.get('reflowNative') and payload.get('artifactFile'):
+            if self.key=='babeldoc' and payload.get('readingNative'):
+                from reading_layer import run
+                with tempfile.TemporaryDirectory(prefix='twintext-reading-') as temp:
+                    result=run(payload,Path(temp),job['cancel_event'],self.artifacts)
+            elif self.key=='babeldoc' and payload.get('reflowNative') and payload.get('artifactFile'):
                 from native_reflow import run
                 def preview(event):
                     with self.lock:job['previewCursor']=1;job['previews']={event['pageIndex']:event}
@@ -142,7 +146,7 @@ class Jobs:
                 from babel_adapter import run
                 pdf=pdf_input(payload)
                 translator=self.translator_factory(payload,job['cancel_event']) if self.translator_factory else None
-                def bridge(text):
+                def bridge(text,page_index=None,kind=None):
                     if not isinstance(text,str):raise ValueError('Translation bridge accepts text only')
                     if translator:
                         try:
@@ -152,7 +156,7 @@ class Jobs:
                         except Exception:
                             if not job['cancelled']:job['bridgeFailure']=True
                             raise
-                    request_id=secrets.token_hex(8);event=threading.Event();request={'id':request_id,'event':event,'startedMonotonic':time.monotonic(),'text':text}
+                    request_id=secrets.token_hex(8);event=threading.Event();request={'id':request_id,'event':event,'startedMonotonic':time.monotonic(),'text':text,'pageIndex':page_index,'kind':kind}
                     with self.lock:job['requests'][request_id]=request;job['lastActivity']=time.time()
                     while not event.wait(.25):
                         if job['cancelled']:raise RuntimeError('Translation bridge cancelled')
@@ -160,9 +164,12 @@ class Jobs:
                     if request.get('error'):
                         job['bridgeFailure']=True;raise RuntimeError(request['error'])
                     translated=request['translation']
-                    if translated==text and len(re.findall(r'[A-Za-z]',text))>=12:bridge.retained_count+=1
+                    unresolved=request.get('retained') if request.get('retainedProvided') else translated==text and len(re.findall(r'[A-Za-z]',text))>=12
+                    if unresolved:
+                        bridge.retained_count+=1
+                        if type(page_index) is int:job.setdefault('incompletePages',set()).add(page_index)
                     return translated
-                bridge.retained_count=0
+                bridge.retained_count=0;bridge.page_context=True
                 def progress(**event):
                     with self.lock:
                         now=time.monotonic();old=job.get('progress',{}).get('stage');new=event.get('stage')
@@ -218,6 +225,7 @@ class Jobs:
                         result.update(pdfFile=str(pdf_result),size=pdf_result.stat().st_size,sha256=digest(pdf_result))
                     else:result['pdf']=base64.b64encode(pdf_result).decode()
                     result['failedPages']=job.pop('failedPages',[])
+                    result['incompletePages']=sorted(job.get('incompletePages',set()))
                     result['pageCount']=job.get('progress',{}).get('page_count')
                     result['engine']='babeldoc';result['pipeline']='native-pdf-9020'
                     if payload.get('documentExport'):
@@ -260,7 +268,9 @@ class Jobs:
         with self.lock:
             job=self.jobs[key];request_id=payload['id']
             result=payload.get('translation','');error=str(payload.get('error',''))
-            fingerprint=hashlib.sha256(json.dumps([result,error],sort_keys=True,ensure_ascii=False,separators=(',',':')).encode()).hexdigest()
+            retained=payload.get('retained') is True;retained_provided='retained' in payload
+            if retained_provided and type(payload['retained']) is not bool:raise ValueError('retained must be a boolean')
+            fingerprint=hashlib.sha256(json.dumps([result,error,retained,retained_provided],sort_keys=True,ensure_ascii=False,separators=(',',':')).encode()).hexdigest()
             receipts=job.setdefault('replyReceipts',{})
             # The HTTP response can be lost after the engine consumes its
             # answer. A matching retry is successful; conflicting or unknown
@@ -271,7 +281,7 @@ class Jobs:
             req=job['requests'][request_id]
             if req['event'].is_set():raise ValueError('Already answered')
             if not isinstance(result,str):raise ValueError('Invalid translation reply')
-            req['translation']=result;req['error']=error
+            req['translation']=result;req['error']=error;req['retained']=retained;req['retainedProvided']=retained_provided
             receipts[request_id]=fingerprint
             while len(receipts)>4096:receipts.pop(next(iter(receipts)))
             req['event'].set()

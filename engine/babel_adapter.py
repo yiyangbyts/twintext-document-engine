@@ -60,7 +60,7 @@ def _run_single(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,o
         def do_translate(self,text,rate_limit_params=None):
             if translation_failures:raise translation_failures[0]
             try:
-                result=bridge(text) if bridge else text
+                result=(bridge(text,getattr(self.twintext_context,'page',None),getattr(self.twintext_context,'kind',None)) if getattr(bridge,'page_context',False) else bridge(text)) if bridge else text
                 if not isinstance(result,str):raise ValueError('Translation provider must return text')
                 return result
             except Exception as error:
@@ -71,6 +71,8 @@ def _run_single(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,o
     folder.mkdir(parents=True,exist_ok=True)
     source=folder/'source.pdf';source.write_bytes(pdf)
     translator=Translator(payload.get('sourceLanguage','en'),payload.get('targetLanguage','zh'),ignore_cache=True)
+    import threading
+    translator.twintext_context=threading.local()
     config=TranslationConfig(translator=translator,input_file=source,lang_in=translator.lang_in,lang_out=translator.lang_out,
         doc_layout_model=layout_model(),pages=str(payload.get('pageIndex',0)+1) if not bridge else payload.get('pages'),
         output_dir=folder/'output',working_dir=folder/'work',debug=bridge is None,no_dual=True,auto_extract_glossary=False,
@@ -83,6 +85,7 @@ def _run_single(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,o
     source.write_bytes(canonical)
     config.twintext_original_rotations=rotations
     config.twintext_structure_state=payload.get('_structureState',{})
+    config.twintext_page_offset=payload.get('_documentPageOffset',0)
     # Keep unselected pages so source/translation retain identical page indexes.
     # BabelDOC calls finish_callback from on_finish when a cancel event exists,
     # including successful synchronous completion. Exceptions still propagate

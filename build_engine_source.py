@@ -21,7 +21,7 @@ constraints-linux-x64.txt constraints-mac-arm64.txt constraints-mac-x64.txt
 constraints-win-x64.txt document_options.py document_preview.py download_model.py
 fetch_sources.py fixtures/README.md fixtures/structure-rows.json ignored_regions.py
 install.py model-manifest.json native_batches.py test_native_batches.py native_artifacts.py native_reflow.py test_native_reflow.py output_safety.py page_geometry.py
-preserved_regions.py reference_layout.py requirements.txt service.py structure_plan.py
+preserved_regions.py reference_layout.py reading_layer.py test_reading_layer.py requirements.txt service.py structure_plan.py
 test_babel_compat.py test_babel_runtime.py test_document_options.py test_document_preview.py
 test_download_model.py test_native_artifacts.py test_native_service.py test_output_safety.py
 test_page_geometry.py test_page_recovery.py test_reference_layout.py test_service_boundary.py
@@ -95,6 +95,7 @@ tables of contents and rotated pages.
 - Preserve native PDF layout and mathematical content.
 - Show available paragraph previews while translation continues.
 - Support translation retries and recovery of failed pages.
+- Expose read-only structured pages for responsive reading typography.
 - Run independently through a CLI or HTTP interface with compatible providers.
 
 Source snapshot for TwinText {version}. Copyright (C) 2026 TwinText, for TwinText

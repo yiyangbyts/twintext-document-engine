@@ -4,6 +4,11 @@ Copyright (C) 2026 TwinText. The engine's first-party source is licensed under
 AGPL-3.0-only; see LICENSE.txt. The bundled runtime probe and engine source builder are covered by the same license. Upstream software retains its original licenses.
 This is a standalone BabelDOC 0.6.4 adaptation with reference/list/contents
 preservation, rotated-page handling, paragraph previews, reflow and recovery.
+The read-only structured-page API lets a client change reading typography
+without repeating translation or rewriting the native PDF. Original formula
+graphics and fixed obstacles keep math and figures distinct from flowing prose.
+Explicit unresolved-fragment metadata prevents partial answers being mistaken
+for completed pages while allowing other paragraphs to continue.
 
 ## Install and run
 
