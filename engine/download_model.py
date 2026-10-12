@@ -4,7 +4,8 @@ import hashlib,json,os
 from pathlib import Path
 ROOT=Path(__file__).resolve().parent
 
-def emit(stage,message,progress=None): print(json.dumps({'stage':stage,'message':message,'progress':progress},ensure_ascii=True),flush=True)
+def emit(stage,message='',progress=None,**details):
+    print(json.dumps({'protocol':2,'stage':stage,'message':message,'progress':progress,**details},ensure_ascii=True),flush=True)
 def main():
     manifest=json.loads((ROOT/'model-manifest.json').read_text())
     if manifest['backend']!='babeldoc':raise ValueError('Unsupported document engine')
@@ -16,9 +17,10 @@ def main():
     configure(ROOT/'model')
     from babeldoc.assets.assets import warmup,generate_all_assets_file_list,verify_file
     from babeldoc.const import CACHE_FOLDER
-    emit('download','下载并校验 BabelDOC 原生版面模型、字体与资源…')
+    emit('download',code='resources_start')
     from asset_downloads import prepare
     prepare(ROOT,manifest['assets'],emit)
+    emit('download',code='resources_verify')
     warmup()
     listing=generate_all_assets_file_list()
     # Check the pinned XPI recipe as well as upstream verification.
@@ -37,7 +39,7 @@ def main():
             entries.append({'path':str(path),'sha3_256':desc['sha3_256'],'size':path.stat().st_size})
     (ROOT/'model').mkdir(exist_ok=True)
     (ROOT/'model'/'babel-assets.json').write_text(json.dumps(entries))
-    emit('ready','模型文件校验完成。',100)
+    emit('ready',progress=100,code='resources_ready')
 if __name__=='__main__':
     try:main()
-    except Exception as error:emit('error',str(error));raise
+    except Exception:emit('error',code='resources_error');raise

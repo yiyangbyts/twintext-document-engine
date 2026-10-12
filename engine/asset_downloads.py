@@ -44,8 +44,12 @@ async def ranked(client,urls):
     scores=await asyncio.gather(*(measure(client,url) for url in urls))
     return [url for _,url in sorted(zip(scores,urls),key=lambda pair:pair[0],reverse=True)]
 
-async def transfer(client,url,path,item):
+async def transfer(client,url,path,item,on_progress=None):
     partial=path.with_suffix(path.suffix+'.part')
+    if valid(partial,item):
+        partial.replace(path)
+        if on_progress:on_progress(item['bytes'])
+        return
     offset=partial.stat().st_size if partial.is_file() else 0
     if offset>=item['bytes']:partial.unlink(missing_ok=True);offset=0
     async with client.stream('GET',url,headers={'Range':f'bytes={offset}-'} if offset else {},follow_redirects=True) as response:
@@ -53,16 +57,14 @@ async def transfer(client,url,path,item):
         if offset and (response.status_code!=206 or not response.headers.get('content-range','').startswith(f'bytes {offset}-')):offset=0
         if response.status_code==206 and not response.headers.get('content-range','').startswith(f'bytes {offset}-'):
             raise ValueError('Invalid asset resume range')
-        received=offset;window=time.monotonic();window_bytes=received
+        received=offset
+        if on_progress:on_progress(received)
         with partial.open('ab' if offset else 'wb') as stream:
             async for chunk in response.aiter_bytes(262144):
                 received+=len(chunk)
                 if received>item['bytes']:raise ValueError('Asset exceeds pinned size')
                 stream.write(chunk)
-                elapsed=time.monotonic()-window
-                if elapsed>=20:
-                    if (received-window_bytes)/elapsed < 16384:raise TimeoutError('Asset source too slow')
-                    window=time.monotonic();window_bytes=received
+                if on_progress:on_progress(received)
     if not valid(partial,item):partial.unlink(missing_ok=True);raise ValueError('Pinned asset digest mismatch')
     partial.replace(path)
 
@@ -74,30 +76,40 @@ async def prepare_async(root,items,emit):
         path=root/relative
         if not valid(path,item):missing.append((path,item))
     if not missing:return
-    sem=asyncio.Semaphore(4);ordering={};locks={};completed=0
-    async with httpx.AsyncClient(timeout=httpx.Timeout(30,connect=6),follow_redirects=True) as client:
+    sem=asyncio.Semaphore(4);ordering={};locks={}
+    total_bytes=sum(item['bytes'] for item in items)
+    existing_bytes=total_bytes-sum(item['bytes'] for _,item in missing)
+    received_by_path={};last_emit=0.0
+    def progress(path,received,force=False):
+        nonlocal last_emit
+        received_by_path[path]=received
+        now=time.monotonic()
+        if force or now-last_emit>=.2:
+            current=existing_bytes+sum(received_by_path.values())
+            emit('download',progress=round(current/total_bytes*95),code='resources_progress',currentBytes=current,totalBytes=total_bytes)
+            last_emit=now
+    async with httpx.AsyncClient(timeout=httpx.Timeout(90,connect=15),follow_redirects=True) as client:
         async def one(path,item):
-            nonlocal completed
             async with sem:
                 path.parent.mkdir(parents=True,exist_ok=True);urls=urls_for(item)
                 family=Path(item['path']).parts[1];hosts=tuple(urlsplit(url).netloc for url in urls);key=(family,hosts)
                 async with locks.setdefault(key,asyncio.Lock()):
                     if key not in ordering:
-                        emit('download','正在测速并选择资源下载源…')
+                        emit('download',code='source_probe')
                         measured=await ranked(client,urls);ordering[key]=[urlsplit(url).netloc for url in measured]
                 urls.sort(key=lambda url:ordering[key].index(urlsplit(url).netloc))
                 errors=[]
                 for attempt in range(2):
                     for url in urls:
-                        try:await transfer(client,url,path,item);break
+                        try:await transfer(client,url,path,item,lambda received:progress(path,received));break
                         except (httpx.HTTPError,ValueError,TimeoutError) as error:
                             errors.append(type(error).__name__)
-                            emit('download','当前资源下载源未完成，正在自动切换…')
+                            emit('download',code='source_retry')
                     else:
                         urls=await ranked(client,urls);continue
                     break
                 else:raise RuntimeError('Pinned asset download unavailable: '+item['path']+' ('+','.join(errors)+')')
-                completed+=1;emit('download',f'已校验资源 {completed} / {len(missing)}',round(completed/len(missing)*95))
+                progress(path,item['bytes'],force=True)
         async with asyncio.TaskGroup() as group:
             for path,item in missing:group.create_task(one(path,item))
 
