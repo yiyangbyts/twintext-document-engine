@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "version": "2.0.25",
+  "version": "2.0.26",
   "engine": "twintext-document-engine",
   "protocol": 5,
   "license": "AGPL-3.0-only",
@@ -8,10 +8,10 @@
   "dependencies": "licenses/runtime/inventory.json",
   "sourceDelivery": {
     "schema": 1,
-    "version": "2.0.25",
+    "version": "2.0.26",
     "repository": "https://github.com/yiyangbyts/twintext-document-engine",
-    "release": "https://github.com/yiyangbyts/twintext-document-engine/releases/tag/v2.0.25",
-    "archive": "https://github.com/yiyangbyts/twintext-document-engine/releases/download/v2.0.25/twintext-engine-source-2.0.25.zip"
+    "release": "https://github.com/yiyangbyts/twintext-document-engine/releases/tag/v2.0.26",
+    "archive": "https://github.com/yiyangbyts/twintext-document-engine/releases/download/v2.0.26/twintext-engine-source-2.0.26.zip"
   },
   "files": {
     "engine/API.md": "01be963803f504d374c4aca44e13aa087025034bb73df0aac2395ae665f654ee",
@@ -308,9 +308,9 @@
     "licenses/frontend/ONNX-Runtime-Web-NOTICE.md": "cca98c597f27aeb31a5c6203c6320cf26ec6cf159502462ee37a4741d205fe75",
     "runtime_probe.py": "3dae9599f75db0be9ff16b6994d59d55821c8a8fabe5728c2c4eaffca6200f71",
     "build_engine_source.py": "bf06130426a3286cafcd149bf132bd893d2678b616234e58783c2e7c9df92248",
-    "engine/source-distribution.json": "181efde3c96895d30f333ba6f49cff47cf9c04c950a4a8da8d33490f9e30695d",
+    "engine/source-distribution.json": "d48bd64acbd2e6331e0dc9cac5a8d2e58f0ee5ca0d782779b112f83e7d047c23",
     "LICENSE.txt": "afca41723b45e26069f68d485bf906a202f892f90c801d3052f8e6296bb41454",
     ".gitignore": "6e8c851dbf2987348b671708305b31255c8d12f2915069025fd32504f1eb03ef",
-    "README.md": "dc177b805d568cca27b3c5167c463b4f4452f1dbec30f4b6ee3f31937bfc4a4f"
+    "README.md": "dca60a9b570a2d8308b623f0b1e0e2a3c7ac7464e5561bb5e4d5533ccb8bc0b4"
   }
 }
