@@ -5,11 +5,25 @@ and preview threads. Every snapshot starts from the prepared, original page.
 """
 from __future__ import annotations
 import base64,copy,pickle,queue,struct,subprocess,sys,threading,time,traceback
-from contextlib import contextmanager,redirect_stdout
+from contextlib import contextmanager,redirect_stdout,ExitStack
 from pathlib import Path
 
 MAX_PREVIEW_BYTES=8*1024*1024
 MAX_PACKET_BYTES=128*1024*1024
+
+def compose_scan_preview(source,translated,index,boxes,crop):
+    """Clip native translated paragraphs over the unchanged scanned page.
+
+    Native OCR masks cover all paragraphs, including pending ones. Clip the
+    provisional result to changed paragraphs so pending text stays readable.
+    This composes PDF drawing commands and rasterizes just once.
+    """
+    import pymupdf
+    page=source[index]
+    for box in boxes:
+        region=pymupdf.Rect(box.x-crop.x,crop.y2-box.y2,box.x2-crop.x,crop.y2-box.y)&page.rect
+        if not region.is_empty:page.show_pdf_page(region,translated,index,clip=region)
+    return page
 
 def preview_failure(error,operation,page_index,revision=0):
     """Keep the failing operation and stack without PDF text or frame locals."""
@@ -79,6 +93,10 @@ class SnapshotRenderer:
     def __init__(self,options,cancel):
         from asset_paths import configure
         configure()
+        from font_resources import install
+        install()
+        from ocr_formula import install as install_source_crops
+        install_source_crops()
         import pymupdf
         from babeldoc.format.pdf.translation_config import TranslationConfig,WatermarkOutputMode
         from babeldoc.format.pdf.document_il.il_version_1 import Document
@@ -90,6 +108,12 @@ class SnapshotRenderer:
             doc_layout_model=object(),working_dir=root/'work',output_dir=root/'output',
             no_dual=True,only_include_translated_page=True,skip_clean=True,watermark_output_mode=WatermarkOutputMode.NoWatermark)
         self.config.progress_monitor=QuietProgress(cancel)
+        # Scanned pages need the same native background masks as formal export.
+        # Repainting OCR glyphs without these masks doubles the source image.
+        self.config.ocr_workaround=options.get('ocrWorkaround') is True
+        self.config.twintext_scan_pages=set(options.get('scanPages',[]))
+        self.config.twintext_preview_source_crops=True
+        self.config.twintext_visual_source=options.get('visualSource',options['source'])
         from document_options import make_typesetter,options as reader_options
         self.config.primary_font_family=reader_options(options.get('documentOptions'))['fontFamily']
         self.Typesetting=Typesetting;self.format_options=options.get('documentOptions',{})
@@ -98,6 +122,7 @@ class SnapshotRenderer:
         with pymupdf.open(options['source']) as original:
             self.boxes=[{name:original.xref_get_key(page.xref,name) for name in
                 ('MediaBox','CropBox','ArtBox','BleedBox','TrimBox','Rotate')} for page in original]
+            self.config.twintext_ocr_pages=set(options['ocrPages']) if 'ocrPages' in options else {p.number for p in original if any(f[4]=='TwinTextOCR' for f in p.get_fonts(full=True))}
     def render(self,packet):
         raw=packet.get('documentOptions',self.format_options)
         if raw!=self.format_options:
@@ -105,13 +130,18 @@ class SnapshotRenderer:
             self.config.primary_font_family=options(raw)['fontFamily']
             self.typesetter=make_typesetter(self.Typesetting,raw)(self.config);self.format_options=copy.deepcopy(raw)
         page=packet['page'];index=page.page_number;config=self.config;pymupdf=self.pymupdf
+        has_source_crops=any(form.form_type=='twintext-source-crop' for p in page.pdf_paragraph
+            for comp in p.pdf_paragraph_composition if comp.pdf_formula for form in comp.pdf_formula.pdf_form)
+        changed=set(packet.get('changedParagraphs',packet['paragraphs']))
+        changed_boxes=[copy.copy(p.box) for i,p in enumerate(page.pdf_paragraph) if i in changed]
         document=self.Document(total_pages=packet['pageCount'],page=[page])
         self.typesetter.typesetting_document(document)
         if packet.get('references'):
             from reference_layout import render_references
             render_references(page,packet['references'],self.typesetter)
         self.creator.docs=document
-        with pymupdf.open(self.options['prepared']) as pdf:
+        with ExitStack() as stack:
+            pdf=stack.enter_context(pymupdf.open(self.options['prepared']))
             self.creator.font_mapper.add_font(pdf,document)
             self.creator.update_page_content_stream(False,page,pdf,config)
             for name,(kind,value) in self.boxes[index].items():
@@ -119,8 +149,15 @@ class SnapshotRenderer:
             config.raise_if_cancelled()
             rendered=pdf[index]
             if self.options.get('preservedRegions'):
-                from preserved_regions import restore_page
-                with pymupdf.open(self.options['source']) as source:restore_page(source,rendered,index,self.options['preservedRegions'])
+                if index in config.twintext_ocr_pages:
+                    from ocr_formula import restore_visual_page
+                    with pymupdf.open(config.twintext_visual_source) as source:restore_visual_page(source,rendered,index,self.options['preservedRegions'])
+                else:
+                    from preserved_regions import restore_page
+                    with pymupdf.open(self.options['source']) as source:restore_page(source,rendered,index,self.options['preservedRegions'])
+            if config.ocr_workaround or index in config.twintext_scan_pages:
+                source=stack.enter_context(pymupdf.open(self.options['source']))
+                rendered=compose_scan_preview(source,pdf,index,changed_boxes,(page.cropbox or page.mediabox).box)
             angle=self.options.get('contentRotations',{}).get(index,0)
             if angle:rendered.set_rotation((-angle)%360)
             # Bound raster memory for posters / unusually large PDF pages.
@@ -131,6 +168,11 @@ class SnapshotRenderer:
             # still uses the source's intrinsic rotation in its viewport.
             size={'width':rendered.rect.width,'height':rendered.rect.height,
                 'rotation':self.options.get('originalRotations',{}).get(index,rendered.rotation)}
+        if has_source_crops:
+            # Graft maps contain native document cycles. Reclaim closed frame
+            # documents before another OCR preview accumulates their resources.
+            import gc
+            gc.collect()
         return {'type':'native-page-preview','revision':packet['revision'],'pageIndex':index,
             'paragraphs':packet['paragraphs'],'completedParagraphs':packet['completedParagraphs'],
             'totalParagraphs':packet['totalParagraphs'],'png':base64.b64encode(output).decode(),**size,
@@ -170,17 +212,30 @@ def worker_main(folder=None):
 class PreviewStream:
     def __init__(self,publish,current_page=0):
         self.publish=publish;self.current_page=current_page;self.lock=threading.RLock()
-        self.pages={};self.locations={};self.completed={};self.revision=0;self.references={}
+        self.pages={};self.locations={};self.completed={};self.changed={};self.revision=0;self.references={}
         self.pending={};self.first={};self.seen=set();self.started=False;self.closed=False
+        self.worker_stop_lock=threading.RLock()
+        self.resources=None;self.snapshot_count=0;self.update_count=0;self.last_sent={};self.interval=.35;self.memory_deferred=False;self.restart_count=0
     def start(self,config):
+        self.resources=getattr(config,'twintext_resources',None)
         if self.started:return
+        self.transport='files' if sys.platform=='win32' else 'stdio'
+        if self.resources and hasattr(self.resources,'observe'):self.resources.observe()
+        if self.resources and self.resources.pressured():
+            self.memory_deferred=True;self._status('deferred-memory');return
         options={'source':str(config.input_file),'prepared':str(config.get_working_file_path('input.pdf')),
             'root':str(config.get_working_file_path('previews')),'langIn':config.lang_in,'langOut':config.lang_out,
             'currentPage':self.current_page,'documentOptions':getattr(config,'twintext_document_options',{}),
             'originalRotations':getattr(config,'twintext_source_rotations',getattr(config,'twintext_original_rotations',{})),
             'contentRotations':getattr(config,'twintext_content_rotations',{}),
             'preservedRegions':getattr(config,'twintext_preserved_regions',[])}
-        self.options=copy.deepcopy(options['documentOptions']);self.worker_options=options
+        options['ocrWorkaround']=bool(getattr(config,'ocr_workaround',False))
+        options['scanPages']=sorted(getattr(config,'twintext_scan_pages',set()))
+        options['ocrPages']=sorted(getattr(config,'twintext_ocr_pages',set()))
+        options['visualSource']=str(getattr(config,'twintext_visual_source',config.input_file))
+        with self.lock:
+            if not hasattr(self,'options'):self.options=copy.deepcopy(options['documentOptions'])
+            options['documentOptions']=copy.deepcopy(self.options);self.worker_options=options
         self.cancel=threading.Event();self.restart_count=0
         # Hidden Windows hosts and native DLL output must not be part of a
         # binary stdout protocol. Both modes use the identical native renderer.
@@ -189,7 +244,8 @@ class PreviewStream:
         self.pump=threading.Thread(target=self._pump,daemon=True);self.pump.start()
     def _status(self,state,**extra):
         self.publish({'type':'preview-status','state':state,'pageIndex':self.current_page,
-            'transport':'isolated-'+self.transport+'-9040','restarts':self.restart_count,**extra})
+            'transport':'isolated-'+self.transport+'-9040','restarts':self.restart_count,
+            'snapshotCount':self.snapshot_count,'updateCount':self.update_count,'memoryDeferred':self.memory_deferred,**extra})
     def _launch(self):
         root=Path(self.worker_options['root']);root.mkdir(parents=True,exist_ok=True)
         self.log=(root/'worker.log').open('ab',buffering=0)
@@ -243,6 +299,8 @@ class PreviewStream:
         except Exception:
             self._stop_worker();raise
     def _stop_worker(self):
+        with self.worker_stop_lock:self._stop_worker_impl()
+    def _stop_worker_impl(self):
         stopped=getattr(self,'receiver_stop',None)
         if stopped:stopped.set()
         process=getattr(self,'process',None)
@@ -285,24 +343,38 @@ class PreviewStream:
                 if abs(index-self.current_page)<=1:self._enqueue(index)
     def prepare(self,document,config,force=False):
         with self.lock:
+            if self.memory_deferred:return
             if self.pages and not force:return
-            if force:self.pages={};self.locations={};self.completed={}
+        # Start only once paragraphs exist, after the layout model's peak.
+        # Publishing worker status must not hold the preview lock: view/control
+        # requests acquire the job lock before entering this stream.
+        self.start(config)
+        with self.lock:
+            if self.memory_deferred:return
+            if force:self.pages={};self.locations={};self.completed={};self.changed={}
             for page in document.page:
                 self.pages[page.page_number]=copy.deepcopy(page)
                 self.completed[page.page_number]=set()
+                self.changed[page.page_number]=set()
                 for index,paragraph in enumerate(page.pdf_paragraph):self.locations[id(paragraph)]=(page.page_number,index)
             self.page_count=document.total_pages
-            self.start(config)
-    def _enqueue(self,index):
-        if not self.completed.get(index):return
-        self.revision+=1
-        self.pending[index]={'page':copy.deepcopy(self.pages[index]),'revision':self.revision,
-            'paragraphs':sorted(self.completed[index]),'completedParagraphs':len(self.completed[index]),
-            'totalParagraphs':len(self.pages[index].pdf_paragraph),'currentPage':self.current_page,
-            'pageCount':getattr(self,'page_count',len(self.pages)),
+    def _snapshot(self,index,packet):
+        self.snapshot_count+=1
+        page=copy.deepcopy(self.pages[index])
+        return {**packet,'page':page,
             'references':copy.deepcopy(self.references.get(index,[])),
             'documentOptions':copy.deepcopy(getattr(self,'options',{}))}
-        if index not in self.seen:self.seen.add(index);self.first[index]=self.pending.pop(index)
+    def _enqueue(self,index):
+        if not self.completed.get(index):return
+        self.revision+=1;self.update_count+=1
+        packet={'revision':self.revision,'paragraphs':sorted(self.completed[index]),'changedParagraphs':sorted(self.changed.get(index,set())),
+            'completedParagraphs':len(self.completed[index]),'totalParagraphs':len(self.pages[index].pdf_paragraph),
+            'currentPage':self.current_page,'pageCount':getattr(self,'page_count',len(self.pages))}
+        self.pending[index]=packet
+        # Preserve exactly the first partial frame; subsequent completions only
+        # mark this page dirty. Snapshot after coalescing, when the worker is free.
+        if index not in self.seen:
+            self.seen.add(index);self.first[index]=self._snapshot(index,self.pending.pop(index))
     def set_current_page(self,index):
         if not isinstance(index,int) or isinstance(index,bool) or index<0:raise ValueError('Invalid view page')
         with self.lock:
@@ -316,7 +388,10 @@ class PreviewStream:
         with self.lock:
             if self.closed or id(paragraph) not in self.locations:return
             index,position=self.locations[id(paragraph)]
-            if not preserve_source:self.pages[index].pdf_paragraph[position]=copy.deepcopy(paragraph)
+            if not preserve_source:
+                previous=self.pages[index].pdf_paragraph[position]
+                if paragraph.unicode!=previous.unicode:self.changed.setdefault(index,set()).add(position)
+                self.pages[index].pdf_paragraph[position]=copy.deepcopy(paragraph)
             self.completed[index].add(position)
             if abs(index-self.current_page)<=1:self._enqueue(index)
     def reference_updated(self,index,plan):
@@ -324,8 +399,21 @@ class PreviewStream:
             if self.closed:return
             self.references[index]=plan
             if abs(index-self.current_page)<=1:self._enqueue(index)
+    def seal(self):
+        # No more paragraphs will arrive. Drain the first/latest visible frames
+        # asynchronously, then retire the renderer before final font export.
+        # Formal typesetting never waits for this optional work.
+        with self.lock:self.closed=True
     def _pump(self):
         while not self.cancel.is_set():
+            # Optional raster previews yield the budget to formal translation.
+            # This event belongs only to the preview worker, never the job's
+            # cancellation signal or the upstream document being typeset.
+            if self.resources and self.resources.pressured():
+                with self.lock:
+                    self.memory_deferred=True;self.closed=True
+                    for values in (self.pages,self.locations,self.completed,self.changed,self.references,self.pending,self.first):values.clear()
+                self._stop_worker();self._status('deferred-memory');return
             try:
                 result=self.outbox.get(timeout=.05)
                 if result['type']=='preview-ready':
@@ -346,9 +434,14 @@ class PreviewStream:
                 index=min(candidates,key=lambda i:(abs(i-self.current_page),candidates[i]['revision'])) if candidates else None
                 packet=None
                 if self.worker_ready and self.inflight is None and index is not None:
-                    packets=self.first if index in self.first else self.pending
-                    packet=packets.pop(index)
-                finishing=self.closed and not self.pending and not self.first and self.inflight is None
+                    first=index in self.first
+                    latest=candidates[index]
+                    complete=latest['completedParagraphs']==latest['totalParagraphs']
+                    due=first or complete or self.closed or time.monotonic()-self.last_sent.get(index,0)>=self.interval
+                    if due:
+                        packet=self.first.pop(index) if first else self._snapshot(index,self.pending.pop(index))
+                        self.last_sent[index]=time.monotonic()
+                finishing=self.closed and packet is None and not self.pending and not self.first and self.inflight is None
             if packet:
                 try:
                     # The writer reports serialization/pipe errors explicitly;
@@ -358,7 +451,11 @@ class PreviewStream:
                 except Exception as error:
                     if self._recover(str(error)):continue
                     return
-            if finishing:return
+            if finishing:
+                self._stop_worker()
+                with self.lock:
+                    for values in (self.pages,self.locations,self.completed,self.changed,self.references,self.pending,self.first):values.clear()
+                self._status('drained');return
     def finish(self,cancelled=False):
         if not self.started or getattr(self,'finished',False):return
         self.finished=True
@@ -374,8 +471,8 @@ def paragraph_previews(config,publish,current_page=0,ignore_references=False,ign
     from babeldoc.format.pdf import high_level
     original=high_level.ILTranslator
     stream=PreviewStream(publish,current_page)
-    try:stream.start(config)
-    except Exception as error:publish(preview_failure(error,'start-worker',current_page))
+    # Rendering has no work during parsing/layout. Launch lazily in prepare()
+    # instead of keeping a second font runtime resident beside model inference.
     class StreamingTranslator(original):
         def translate(self,document):
             self._reference_stream=stream
@@ -385,9 +482,8 @@ def paragraph_previews(config,publish,current_page=0,ignore_references=False,ign
             # title context or the objects used by final typesetting.
             self._preview_target=min((p.page_number for p in document.page),key=lambda i:abs(i-stream.current_page),default=None)
             self._preview_deferred=[];self._preview_queued=False
-            # Keep previews alive through final typesetting rather than waiting
-            # for a preview flush before BabelDOC can finish the document.
-            return super().translate(document)
+            try:return super().translate(document)
+            finally:stream.seal()
         def post_translate_paragraph(self,paragraph,*args,**kwargs):
             result=super().post_translate_paragraph(paragraph,*args,**kwargs)
             try:

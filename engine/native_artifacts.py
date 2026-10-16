@@ -13,6 +13,7 @@ def capture(config,policy,collector):
     from babeldoc.format.pdf import high_level
     translator,typesetter=high_level.ILTranslator,high_level.Typesetting
     sources={}
+    def render_state():return dict(ocrWorkaround=bool(config.ocr_workaround),scanPages=sorted(getattr(config,'twintext_scan_pages',set())),ocrPages=sorted(getattr(config,'twintext_ocr_pages',set())),nonTextPages=sorted(getattr(config,'twintext_nontext_pages',set())))
     class ExportTranslator(translator):
         def translate_paragraph(self,paragraph,page,*args,**kwargs):
             try:sources[(page.page_number,paragraph.debug_id)]=paragraph_text(paragraph)
@@ -25,11 +26,24 @@ def capture(config,policy,collector):
             # whole IL in memory; cached paragraph replies support later reflow.
             try:
                 size=sum(len(p.unicode or '') for page in document.page for p in page.pdf_paragraph)
-                if len(document.page)<=256 and size<=2_000_000:
+                if getattr(config,'twintext_incremental_snapshots',False):
+                    from native_snapshot import save
+                    artifact=dict(document=document,sources=sources,references={p.page_number:policy.snapshot(p.page_number) for p in document.page} if policy else {},
+                        preserved=list(getattr(config,'twintext_preserved_regions',[])),preserved_ids=set(policy.preserved) if policy else set(),
+                        langIn=config.lang_in,langOut=config.lang_out,pages=config.pages,pageCount=document.total_pages,
+                        isolation=config.only_include_translated_page,contentRotations=getattr(config,'twintext_content_rotations',{}),**render_state())
+                    collector['exportPages']=text_pages(artifact)
+                    resources=dict(source=config.twintext_original_source,canonicalSource=config.input_file,prepared=config.get_working_file_path('input.pdf'))
+                    if getattr(config,'twintext_visual_source',config.twintext_original_source)!=config.twintext_original_source:resources['visualSource']=config.twintext_visual_source
+                    collector['snapshotFile']=save(artifact,config.get_working_file_path('twintext.il.gz'),
+                        resources)
+                elif len(document.page)<=256 and size<=2_000_000:
                     collector.update(document=copy.deepcopy(document),prepared=Path(config.get_working_file_path('input.pdf')).read_bytes(),
                         sources=sources.copy(),references={p.page_number:policy.snapshot(p.page_number) for p in document.page} if policy else {},
                         preserved=list(getattr(config,'twintext_preserved_regions',[])),
                         preserved_ids=set(policy.preserved) if policy else set())
+                    collector.update(render_state())
+                    if getattr(config,'twintext_visual_source',config.twintext_original_source)!=config.twintext_original_source:collector['visualSource']=Path(config.twintext_visual_source).read_bytes()
             except Exception as error:
                 config.raise_if_cancelled();logging.getLogger(__name__).warning('Optional reflow snapshot unavailable: %s',error)
             return super().typesetting_document(document)
@@ -77,9 +91,9 @@ class ArtifactStore:
         item['accessed']=time.monotonic();return item['artifact']
 
 def finalize(source,output,preserved,config,isolation=False,canonical=None):
-    from preserved_regions import restore
+    from ocr_formula import restore_regions
     import pymupdf
-    output=restore(canonical or source,output,preserved,isolation,config)
+    output=restore_regions(canonical or source,output,preserved,isolation,config)
     from page_geometry import restore_content
     with pymupdf.open(stream=source,filetype='pdf') as original:selected=[i for i in range(original.page_count) if config.should_translate_page(i+1)]
     output=restore_content(output,getattr(config,'twintext_content_rotations',{}),selected,isolation)
@@ -97,6 +111,10 @@ def finalize(source,output,preserved,config,isolation=False,canonical=None):
 def reflow(artifact,folder,raw,cancel):
     from asset_paths import configure
     configure()
+    from font_resources import install
+    install()
+    from ocr_formula import install as install_source_crops
+    install_source_crops()
     from babeldoc.format.pdf.translation_config import TranslationConfig,WatermarkOutputMode
     from babeldoc.format.pdf.document_il.midend.typesetting import Typesetting
     from babeldoc.format.pdf.document_il.backend.pdf_creater import PDFCreater
@@ -115,6 +133,14 @@ def reflow(artifact,folder,raw,cancel):
     config.progress_monitor=QuietProgress(cancel);config.primary_font_family=options(raw)['fontFamily']
     config.twintext_preserved_regions=artifact['preserved']
     config.twintext_content_rotations=artifact.get('contentRotations',{})
+    config.ocr_workaround=artifact.get('ocrWorkaround',False)
+    config.twintext_scan_pages=set(artifact.get('scanPages',[]))
+    if 'ocrPages' in artifact:config.twintext_ocr_pages=set(artifact['ocrPages'])
+    else:
+        with pymupdf.open(source) as pdf:config.twintext_ocr_pages={p.number for p in pdf if any(f[4]=='TwinTextOCR' for f in p.get_fonts(full=True))}
+    config.twintext_visual_source=source
+    if config.twintext_scan_pages and artifact.get('visualSource',artifact['source'])!=canonical:
+        config.twintext_visual_source=folder/'visual-source.pdf';config.twintext_visual_source.write_bytes(artifact.get('visualSource',artifact['source']))
     class ReflowTypesetting(make_typesetter(Typesetting,raw)):
         def render_page(self,page):
             page.pdf_paragraph=[p for p in page.pdf_paragraph if p.debug_id not in artifact['preserved_ids']]
@@ -126,6 +152,8 @@ def reflow(artifact,folder,raw,cancel):
     with pymupdf.open(source) as pdf:boxes=fix_media_box(pdf)
     result=PDFCreater(prepared,document,config,boxes).write(config)
     output=finalize(artifact['source'],Path(result.mono_pdf_path).read_bytes(),artifact['preserved'],config,artifact['isolation'],canonical)
+    from pdf_text_quality import preserve_nontext
+    output=preserve_nontext(output,artifact['source'],artifact.get('nonTextPages',[]),artifact['isolation'])
     return {'pdf':base64.b64encode(output).decode(),'pageCount':artifact['pageCount'],'pipeline':'native-pdf-9020','engine':'babeldoc'}
 
 def open_pdf(payload,field):

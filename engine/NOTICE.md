@@ -9,3 +9,7 @@ Version 2.0.15 restores PDF parsing, translation and native PDF presentation to 
 Version 2.0.13 adds measured asset source selection, bounded parallel downloads, range resume, slow-source failover and pinned digest verification.
 
 TwinText-authored engine code, the runtime probe and source builder are licensed under AGPL-3.0-only. The standalone CLI and HTTP interface run the same document policies. Source and build materials are available at https://github.com/yiyangbyts/twintext-document-engine/releases without payment or activation. Original license texts and notices remain included.
+
+2026-10-16 — TwinText 2.0.32: bounded read-only completed-page raster cache, serial isolated PyMuPDF render workers, cancellation and cache identity checks. Translation, original PDF objects, font metrics and export are unchanged.
+
+2026-10-15 — TwinText 2.0.30: selected-page text quality checks, zero-body completion gate, bounded isolated OCR and disk caching, opaque native source preservation for unusable bitmap fonts, stable OCR text metrics and body-region line grouping, and consistent scan masking in previews. The unmodified English tessdata_fast 4.1.0 data is separately attributed. Healthy text-layer parsing/typesetting, model inference and font export settings retain the 2.0.29 path.

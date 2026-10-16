@@ -99,10 +99,29 @@ class Jobs:
             if client_id:job.update(clientJobId=client_id,submissionHash=fingerprint)
         self.pool.submit(self.run,job,payload);return key
     def run(self,job,payload):
+        from resource_budget import ResourceBudget
+        def memory(value):
+            with self.lock:job['memory']=value
+        try:
+            with ResourceBudget(payload,memory) as budget:
+                job['resources']=budget
+                self._run(job,{**payload,'_resourceBudget':budget})
+            memory(budget.report())
+            if job.get('result') is not None:job['result']['memory']=job['memory']
+        except Exception as error:
+            job.update(state='error',error=str(error)[:1200],errorCode=failure_code(error,'preparing'))
+        finally:
+            job.pop('resources',None)
+
+    def _run(self,job,payload):
         try:
             job['state']='running';job['startedMonotonic']=time.monotonic();job['stageStartedMonotonic']=job['startedMonotonic'];job['stageTimings']={}
             if job['cancelled']:raise RuntimeError('Cancelled')
-            if self.key=='babeldoc' and payload.get('reflowNative') and payload.get('artifactFile'):
+            if self.key=='babeldoc' and payload.get('renderNativePage'):
+                job['pageRaster']=True
+                from page_raster import run
+                result=run(payload,job['cancel_event'])
+            elif self.key=='babeldoc' and payload.get('reflowNative') and payload.get('artifactFile'):
                 from native_reflow import run
                 def preview(event):
                     with self.lock:job['previewCursor']=1;job['previews']={event['pageIndex']:event}
@@ -166,6 +185,7 @@ class Jobs:
                 def progress(**event):
                     with self.lock:
                         now=time.monotonic();old=job.get('progress',{}).get('stage');new=event.get('stage')
+                        if job.get('resources') and new:job['resources'].stage=new
                         if new and new!=old:
                             if old:job['stageTimings'][old]=job['stageTimings'].get(old,0)+round((now-job['stageStartedMonotonic'])*1000)
                             job['stageStartedMonotonic']=now
@@ -208,10 +228,11 @@ class Jobs:
                             if job['cancelled']:raise
                             from document_preview import preview_failure
                             job.setdefault('exportWarnings',[]).append(preview_failure(error,'export-text',payload.get('currentPage',0)))
-                    if collector and collector.get('batched'):
+                    if collector and 'exportPages' in collector:
                         job['exportPages']=collector.get('exportPages',[]);job['failedPages']=collector.get('failedPages',[])
                     if collector and collector.get('artifactFile'):job['artifactFile']=collector['artifactFile']
                     result={'regions':regions}
+                    if collector and collector.get('textQuality'):result['textQuality']=collector['textQuality']
                 if pdf_result:
                     if isinstance(pdf_result,Path):
                         from native_batches import digest
@@ -234,8 +255,9 @@ class Jobs:
                 from document_preview import preview_failure
                 job['errorDetails']={**preview_failure(error,'document-pipeline',payload.get('currentPage',0)),
                     'stage':job.get('progress',{}).get('stage'), 'pages':payload.get('pages')}
+                if getattr(error,'text_quality',None):job['errorDetails']['textQuality']=error.text_quality
             if self.key=='babeldoc' and payload.get('documentExport') and not job.get('bridgeFailure') and not job['cancelled']:
-                job['errorCode']=failure_code(error,job.get('progress',{}).get('stage'))
+                job['errorCode']=getattr(error,'code',None) or failure_code(error,job.get('progress',{}).get('stage'))
                 job['errorDetails']['category']=job['errorCode']
         finally:
             with self.lock:job.pop('previewControl',None);job['finishedMonotonic']=time.monotonic()
@@ -247,7 +269,7 @@ class Jobs:
             pending=[r for r in job['requests'].values() if not r['event'].is_set()]
             timing={'elapsedMs':round((now-start)*1000),'stageElapsedMs':round((now-job.get('stageStartedMonotonic',now))*1000),'stageTimings':job.get('stageTimings',{}).copy(),
                     'pendingReplies':len(pending),'oldestReplyMs':round(max((now-r.get('startedMonotonic',now) for r in pending),default=0)*1000)}
-            fields=('id','state','error','errorCode','errorDetails','progress','previewHealth','previewWarnings')+(('result',) if not metadata else ())
+            fields=('id','state','error','errorCode','errorDetails','progress','previewHealth','previewWarnings','memory')+(('result',) if not metadata else ())
             return {k:job[k] for k in fields if k in job}|{'timing':timing,'requests':[{k:v for k,v in r.items() if k not in ('event','translation','error','startedMonotonic')} for r in pending]}|({'resultReady':True} if metadata and job['state']=='complete' else {})|(
                 {'previews':sorted({v['cursor']:v for v in [*job.get('firstPreviews',{}).values(),*job.get('previews',{}).values()] if v['cursor']>after}.values(),key=lambda v:v['cursor']),
                  'previewCursor':job.get('previewCursor',0)} if 'previewCursor' in job and (not metadata or job['state']!='complete') else {})
@@ -292,6 +314,7 @@ class Jobs:
     def cancel(self,key):
         with self.lock:
             job=self.jobs[key];job['cancelled']=True;job['cancel_event'].set()
+            if job.get('pageRaster'):job.pop('result',None)
 
 def handler(jobs,config):
     class Handler(BaseHTTPRequestHandler):
@@ -316,7 +339,7 @@ def handler(jobs,config):
                     if delivery.get('schema')!=1 or delivery.get('repository')!=repository or not isinstance(version,str) or not re.fullmatch(r'\d+\.\d+\.\d+',version) or delivery.get('archive')!=expected:
                         return self.send(503,{'error':'Invalid source delivery metadata'})
                     self.send_response(302);self.send_header('Location',expected);self.send_header('Cache-Control','no-store');self.send_header('Content-Length','0');self.end_headers();return
-                if self.path=='/health':return self.send(200,{**jobs.health(),'ready':True,'protocol':5,'engine':config['id'],'backend':jobs.key,'capabilities':['native-pdf-9020','cancellable-bridge','native-paragraph-preview-9031','engine-structure-2.0.5-v1','native-reflow-export-9035','bounded-native-files-2.0.9','persistent-native-reflow-2.0.10']})
+                if self.path=='/health':return self.send(200,{**jobs.health(),'ready':True,'protocol':5,'engine':config['id'],'backend':jobs.key,'capabilities':['native-pdf-9020','cancellable-bridge','native-paragraph-preview-9031','engine-structure-2.0.5-v1','native-reflow-export-9035','bounded-native-files-2.0.9','persistent-native-reflow-2.0.10','bounded-memory-snapshots-2.0.27']})
                 location=urlsplit(self.path)
                 if re.fullmatch(r'/v1/jobs/[^/]+(?:/result)?',location.path):
                     parts=location.path.split('/');query=parse_qs(location.query)

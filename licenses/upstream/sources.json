@@ -48,5 +48,10 @@
     "path": "licenses/upstream/PP-DocLayoutV2-ONNX-MODEL-CARD.md",
     "source": "https://huggingface.co/opendatalab/MinerU-4_models_onnx/raw/358310b4f64b95f9fefc372ad899356e4111f376/README.md",
     "sha256": "bb03afa9a76c3ccec9ecf0c92e99129eca3e0049f0c9269e8ec63446768e2449"
+  },
+  {
+    "path": "licenses/upstream/TESSDATA-FAST-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/4.1.0/LICENSE",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
   }
 ]

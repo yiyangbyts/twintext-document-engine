@@ -19,9 +19,10 @@ API.md LICENSE.txt NOTICE.md README.md adapters.py asset_paths.py asset_download
 babel_compat.py babel_runtime.py backend.json cli.py constraints-linux-arm64.txt
 constraints-linux-x64.txt constraints-mac-arm64.txt constraints-mac-x64.txt
 constraints-win-x64.txt document_options.py document_preview.py download_model.py
-fetch_sources.py fixtures/README.md fixtures/structure-rows.json ignored_regions.py
-install.py model-manifest.json native_batches.py test_native_batches.py native_artifacts.py native_reflow.py test_native_reflow.py output_safety.py page_geometry.py
+fetch_sources.py fixtures/README.md fixtures/structure-rows.json ignored_regions.py font_resources.py pdf_worker.py test_font_resources.py
+install.py model-manifest.json resource_budget.py native_snapshot.py test_resource_budget.py test_native_snapshot.py native_batches.py test_native_batches.py native_artifacts.py native_reflow.py test_native_reflow.py output_safety.py page_geometry.py
 preserved_regions.py reference_layout.py requirements.txt service.py structure_plan.py
+pdf_text_quality.py ocr_worker.py ocr_formula.py ocr-manifest.json ocr-data/eng.traineddata test_pdf_text_quality.py page_raster.py test_page_raster.py
 test_babel_compat.py test_babel_runtime.py test_document_options.py test_document_preview.py
 test_download_model.py test_native_artifacts.py test_native_service.py test_output_safety.py
 test_page_geometry.py test_page_recovery.py test_reference_layout.py test_service_boundary.py

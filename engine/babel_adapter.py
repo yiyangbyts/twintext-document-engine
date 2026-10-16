@@ -23,16 +23,13 @@ def il_regions(document):
     return result
 
 def run(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,on_preview=None,on_control=None,collector=None):
-    if bridge and (isinstance(pdf,Path) or len(pdf)>8*1024*1024):
-        from native_batches import run_document
-        return run_document(pdf,folder,payload,_run_single,bridge,progress,cancel_event,on_preview,on_control,collector)
-    # Even compact books need bounded IL; compressed PDF bytes can be small.
     if bridge:
-        import pymupdf
-        with pymupdf.open(stream=pdf,filetype='pdf') as document:
-            if document.page_count>16:
-                from native_batches import run_document
-                return run_document(pdf,folder,payload,_run_single,bridge,progress,cancel_event,on_preview,on_control,collector)
+        from native_batches import run_document
+        from pdf_text_quality import state
+        # A file result owns persistent snapshots. Legacy byte-only clients
+        # retain their bounded in-memory artifact after the workspace closes.
+        payload={**payload,'_incrementalSnapshots':bool(payload.get('outputFile')),'_textQuality':state()}
+        return run_document(pdf,folder,payload,_run_single,bridge,progress,cancel_event,on_preview,on_control,collector)
     if isinstance(pdf,Path):pdf=pdf.read_bytes()
     return _run_single(pdf,folder,payload,bridge,progress,cancel_event,on_preview,on_control,collector)
 
@@ -40,6 +37,10 @@ def run(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,on_previe
 def _run_single(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,on_preview=None,on_control=None,collector=None):
     from asset_paths import configure
     configure()
+    from font_resources import install
+    install()
+    from ocr_formula import install as install_source_crops
+    install_source_crops()
     from babeldoc.translator.translator import BaseTranslator
     from babeldoc.format.pdf.translation_config import TranslationConfig,WatermarkOutputMode
     from babeldoc.format.pdf.high_level import do_translate,get_translation_stage
@@ -49,7 +50,9 @@ def _run_single(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,o
     from babel_runtime import layout_model
     from babel_compat import install_graphics_copy,input_documents
     install_graphics_copy()
-    translation_failures=[]
+    import threading
+    translation_failures=[];translation_context=threading.local();quality=payload.get('_textQuality')
+    quality_lock=threading.Lock()
     class Translator(BaseTranslator):
         name='twintext-bridge'
         model='configured-provider'
@@ -60,6 +63,8 @@ def _run_single(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,o
         def do_translate(self,text,rate_limit_params=None):
             if translation_failures:raise translation_failures[0]
             try:
+                if quality is not None and getattr(translation_context,'body',False):
+                    with quality_lock:quality['bodyRequests']+=1
                 result=bridge(text) if bridge else text
                 if not isinstance(result,str):raise ValueError('Translation provider must return text')
                 return result
@@ -79,10 +84,26 @@ def _run_single(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,o
         auto_enable_ocr_workaround=True,watermark_output_mode=WatermarkOutputMode.NoWatermark,
         only_include_translated_page=bridge is None or payload.get('pageIsolation') is True)
     from page_geometry import normalize
+    config.twintext_resources=payload.get('_resourceBudget')
+    config.twintext_incremental_snapshots=payload.get('_incrementalSnapshots',False)
+    config.twintext_original_source=folder/'original-source.pdf'
+    config.twintext_original_source.write_bytes(pdf)
     canonical,rotations=normalize(pdf,config)
+    config.twintext_visual_source=config.twintext_original_source
+    if rotations:
+        config.twintext_visual_source=folder/'visual-source.pdf';config.twintext_visual_source.write_bytes(canonical)
+    if bridge:
+        from pdf_text_quality import prepare
+        payload={**payload,'_ocrGeometry':{}}
+        canonical=prepare(canonical,folder,payload,progress,cancel_event)
     source.write_bytes(canonical)
     config.twintext_original_rotations=rotations
     config.twintext_structure_state=payload.get('_structureState',{})
+    config.twintext_ocr_pages={n-payload.get('_pageOffset',0) for n in (quality or {}).get('ocrPages',[])}
+    config.twintext_scan_pages={n-payload.get('_pageOffset',0) for n in (quality or {}).get('scanPages',[])}
+    config.twintext_ocr_geometry=payload.get('_ocrGeometry',{})
+    config.twintext_page_offset=payload.get('_pageOffset',0)
+    config.twintext_nontext_pages=set()
     # Keep unselected pages so source/translation retain identical page indexes.
     # BabelDOC calls finish_callback from on_finish when a cancel event exists,
     # including successful synchronous completion. Exceptions still propagate
@@ -93,7 +114,8 @@ def _run_single(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,o
                          finish_callback=lambda **event:None,cancel_event=cancel_event) as monitor:
         config.progress_monitor=monitor
         references=reference_layout(config,on_preview) if bridge else nullcontext()
-        with document_options(config,payload.get('documentOptions')), references as policy:
+        from pdf_text_quality import track_body
+        with document_options(config,payload.get('documentOptions')), references as policy, track_body(config,quality,translation_context) if quality is not None else nullcontext():
             if on_preview and payload.get('documentExport'):
                 from document_preview import paragraph_previews
                 context=paragraph_previews(config,on_preview,int(payload.get('currentPage',0)))
@@ -111,8 +133,8 @@ def _run_single(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,o
     document=json.loads(paths[0].read_text()) if bridge is None else {}
     output=Path(result.mono_pdf_path).read_bytes() if bridge else None
     if output:
-        from preserved_regions import restore
-        output=restore(canonical,output,getattr(config,'twintext_preserved_regions',[]),payload.get('pageIsolation') is True,config)
+        from ocr_formula import restore_regions
+        output=restore_regions(canonical,output,getattr(config,'twintext_preserved_regions',[]),payload.get('pageIsolation') is True,config)
         from page_geometry import restore_content
         import pymupdf
         with pymupdf.open(stream=pdf,filetype='pdf') as original:selected=[i for i in range(original.page_count) if config.should_translate_page(i+1)]
@@ -133,12 +155,14 @@ def _run_single(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,o
                 output=original.tobytes()
             if progress:progress(type='validated',page_count=translated.page_count)
     if output:
+        from pdf_text_quality import preserve_nontext
+        output=preserve_nontext(output,pdf,config.twintext_nontext_pages,payload.get('pageIsolation') is True)
         from output_safety import validate
         import pymupdf
         with pymupdf.open(stream=canonical, filetype='pdf') as original:
             selected=[index for index in range(original.page_count) if config.should_translate_page(index+1)]
         validate(canonical,output,selected,payload.get('pageIsolation') is True)
-    if collector and output:
+    if collector and output and 'document' in collector:
         import pymupdf
         with pymupdf.open(stream=output,filetype='pdf') as doc:count=doc.page_count
         collector.update(source=pdf,langIn=config.lang_in,langOut=config.lang_out,pages=payload.get('pages'),

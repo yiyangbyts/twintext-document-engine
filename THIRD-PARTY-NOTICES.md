@@ -19,3 +19,7 @@ The [platform and resource inventory](licenses/runtime/inventory.json) identifie
 See [AGPL](licenses/AGPL-3.0.txt), [Apache-2.0](licenses/APACHE-2.0.txt), [uv licenses](licenses/uv/), and [ONNX Runtime Web notices](licenses/frontend/). Other original texts are indexed by the inventory.
 
 TwinText modifications are described in [engine/NOTICE.md](engine/NOTICE.md). [Source releases](https://github.com/yiyangbyts/twintext-document-engine/releases) provide the versioned engine source and pinned BabelDOC, PyMuPDF, MuPDF and Levenshtein upstream source archives. Build and installation instructions are in [engine/README.md](engine/README.md). Use, modification and redistribution remain subject to the applicable licenses.
+
+### Tesseract English OCR data
+
+The engine bundles the unchanged English `tessdata_fast` 4.1.0 trained data from https://github.com/tesseract-ocr/tessdata_fast/tree/4.1.0, under Apache-2.0. SHA-256: `7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2`. The upstream license is included at `licenses/upstream/TESSDATA-FAST-LICENSE.txt`. OCR executes through the existing PyMuPDF/MuPDF runtime; no additional Python package is installed.

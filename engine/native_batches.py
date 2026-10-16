@@ -31,6 +31,7 @@ def cancelled(event):
 
 
 def fatal(error):
+    if getattr(error,'twintext_text_failure',False):return True
     if getattr(error,'twintext_translation_failure',False):return True
     if isinstance(error,(ImportError,FileNotFoundError,PermissionError)):return True
     return isinstance(error,OSError) and error.errno in (errno.ENOSPC,errno.EDQUOT,errno.EACCES,errno.EPERM,errno.EROFS)
@@ -76,16 +77,28 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
     if not isinstance(source,Path):source_file.write_bytes(source)
     with pymupdf.open(source_file) as original:
         count=original.page_count;selected=selected_pages(payload.get('pages'),count)
+        from pdf_text_quality import REVISION,ensure_body
+        quality=payload.get('_textQuality')
+        cache_root=Path(str(payload['outputFile'])+'.parts') if payload.get('outputFile') else folder/'parts'
+        payload={**payload,'_ocrCache':str(cache_root/'ocr'),'_documentDigest':digest(source_file)}
+        budget=payload.get('_resourceBudget')
         if payload.get('pageIsolation') and len(selected)!=1:raise ValueError('Expected one isolated page')
         average=max(1,source_file.stat().st_size//max(1,count));limit=page_limit(average,payload)
+        admitted=budget.batch_pages(average,limit) if budget else limit
         # Preserve small-document reflow only within the same resource budget.
-        if count<=limit and source_file.stat().st_size<=16*1024*1024:
-            regions,output=single(source_file.read_bytes(),folder,payload,bridge,progress,cancel_event,on_preview,on_control,collector)
+        if count<=admitted and source_file.stat().st_size<=16*1024*1024:
+            before_memory=max(budget.current['rssBytes'],budget.current.get('privateBytes',0)) if budget else 0
+            try:regions,output=single(source_file.read_bytes(),folder,payload,bridge,progress,cancel_event,on_preview,on_control,collector)
+            finally:
+                if budget:budget.completed_batch(count,before_memory)
+            ensure_body(quality)
+            if collector is not None and quality is not None:
+                collector['textQuality']=quality.copy();collector['failedPages']=sorted(set(quality['unreadablePages']))
             if output is not None and payload.get('outputFile'):
                 destination=Path(payload['outputFile']);destination.parent.mkdir(parents=True,exist_ok=True)
                 if destination.resolve()==source_file.resolve():raise ValueError('Cannot overwrite source PDF')
                 temporary=destination.with_name(destination.name+'.tmp');temporary.write_bytes(output);temporary.replace(destination)
-                if collector and 'document' in collector:
+                if collector and ('document' in collector or collector.get('snapshotFile')):
                     checkpoint=Path(str(destination)+'.parts');checkpoint.mkdir(parents=True,exist_ok=True)
                     part=save_part(collector,checkpoint/'0.il.gz',0,count-1)
                     if not isinstance(source,Path):shutil.copyfile(source_file,checkpoint/'source.pdf');source_file=checkpoint/'source.pdf'
@@ -114,7 +127,7 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
         checkpoint=Path(str(destination)+'.parts') if payload.get('outputFile') else folder/'parts'
         checkpoint.mkdir(parents=True,exist_ok=True)
         if not isinstance(source,Path):shutil.copyfile(source_file,checkpoint/'source.pdf');source_file=checkpoint/'source.pdf'
-        signature=hashlib.sha256(json.dumps(dict(geometryRevision='sideways-2.0.11',source=digest(source_file),pages=selected,cacheKey=payload.get('cacheKey'),
+        signature=hashlib.sha256(json.dumps(dict(geometryRevision='sideways-2.0.11',textRevision=REVISION,source=payload['_documentDigest'],pages=selected,cacheKey=payload.get('cacheKey'),
             sourceLanguage=payload.get('sourceLanguage'),targetLanguage=payload.get('targetLanguage'),documentOptions=payload.get('documentOptions')),sort_keys=True).encode()).hexdigest()
         failed=[];export=[];completed=set();revisions={};selected_set=set(selected);reflow_parts=[]
         with pymupdf.open(source_file) as assembled:
@@ -129,6 +142,16 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
                 on_preview(value)
             def part(start,end):
                 cancelled(cancel_event)
+                if budget:
+                    admitted=budget.batch_pages(average,limit)
+                    if end-start+1>admitted:
+                        first=max(start,min(focus,end-admitted+1)) if focus in selected_set and start<=focus<=end else start
+                        last=first+admitted-1
+                        part(first,last)
+                        if start<first:part(start,first-1)
+                        if last<end:part(last+1,end)
+                        return
+                before_memory=max(budget.current['rssBytes'],budget.current.get('privateBytes',0)) if budget else 0
                 indexes=[n for n in selected if start<=n<=end]
                 part_file=checkpoint/f'{start}-{end}.pdf';metadata=part_file.with_suffix('.json');cached=None
                 try:
@@ -140,7 +163,9 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
                 if cached is None:
                     metadata.unlink(missing_ok=True)
                     before=getattr(bridge,'retained_count',0)
+                    before_body=quality['bodyRequests'] if quality is not None else 0
                     local_collector={} if collector is not None else None
+                    retry=False
                     try:
                         with tempfile.TemporaryDirectory(prefix='part-',dir=folder) as temporary:
                             work=Path(temporary)
@@ -148,7 +173,7 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
                                 document.insert_pdf(original,from_page=start,to_page=end)
                                 data=document.tobytes(garbage=3,deflate=True)
                             local={**payload,'pages':','.join(str(n-start+1) for n in indexes),'pageIsolation':False,
-                                'currentPage':max(0,min(end-start,focus-start)),'_structureState':{'inReferences':reference_states[start]}}
+                                'currentPage':max(0,min(end-start,focus-start)),'_structureState':{'inReferences':reference_states[start]},'_pageOffset':start}
                             local.pop('outputFile',None)
                             def update(**event):
                                 if progress:progress(**{**event,'overall_progress':100*len(completed)/len(selected),
@@ -160,9 +185,13 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
                             with pymupdf.open(stream=output,filetype='pdf') as result:
                                 if result.page_count!=end-start+1:raise ValueError('Native batch page alignment failed')
                             temporary_file=part_file.with_suffix('.tmp');temporary_file.write_bytes(output);temporary_file.replace(part_file)
-                            pages=text_pages(local_collector) if local_collector and 'document' in local_collector else []
+                            pages=local_collector.get('exportPages',[]) if local_collector else []
+                            if local_collector and 'document' in local_collector:pages=text_pages(local_collector)
                             pages=[{**p,'index':p['index']+start} for p in pages]
                             cached=dict(signature=signature,sha256=digest(part_file),exportPages=pages)
+                            if quality is not None:
+                                cached['bodyRequests']=quality['bodyRequests']-before_body
+                                cached['textQuality']={key:sorted(set(n for n in quality[key] if start<=n<=end)) for key in ('scanPages','ocrPages','fontRepairPages','unreadablePages','nonTextPages')}
                             reflow_part=save_part(local_collector,checkpoint/f'{start}-{end}.il.gz',start,end)
                             if reflow_part:cached['reflowPart']=reflow_part
                             # A retained/refused paragraph must be eligible for
@@ -170,16 +199,27 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
                             if getattr(bridge,'retained_count',0)==before:
                                 temporary_meta=metadata.with_suffix('.tmp');temporary_meta.write_text(json.dumps(cached));temporary_meta.replace(metadata)
                     except Exception as error:
+                        if quality is not None:quality['bodyRequests']=before_body
                         cancelled(cancel_event)
                         if fatal(error):raise
                         if start<end:
-                            middle=(start+end)//2;part(start,middle);part(middle+1,end);return
-                        failed.append(start)
-                        if on_preview:on_preview({'type':'preview-warning','pageIndex':start,'message':'Native page kept its source after page processing failed.','operation':'batch-page','errorType':type(error).__name__})
-                        completed.add(start)
-                        return
+                            retry=True
+                        else:
+                            if isinstance(error,MemoryError):raise
+                            failed.append(start)
+                            if on_preview:on_preview({'type':'preview-warning','pageIndex':start,'message':'Native page kept its source after page processing failed.','operation':'batch-page','errorType':type(error).__name__})
+                            completed.add(start)
+                            return
                     finally:
-                        local_collector=None;gc.collect()
+                        local_collector=None;data=None;output=None;gc.collect()
+                        if budget:budget.completed_batch(end-start+1,before_memory)
+                    if retry:
+                        # Leave the exception handler before retrying: its
+                        # traceback owns the failed parser's entire IL graph.
+                        middle=(start+end)//2;part(start,middle);part(middle+1,end);return
+                elif quality is not None:
+                    quality['bodyRequests']+=cached.get('bodyRequests',0)
+                    for key in ('scanPages','ocrPages','fontRepairPages','unreadablePages','nonTextPages'):quality[key].extend(cached.get('textQuality',{}).get(key,[]))
                 with pymupdf.open(part_file) as translated:
                     for index in indexes:
                         assembled.delete_page(index);assembled.insert_pdf(translated,from_page=index-start,to_page=index-start,start_at=index)
@@ -196,6 +236,11 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
                 if progress:progress(type='batch-complete',stage='completed-native-batch',completed_pages=len(completed),total_pages=len(selected),overall_progress=100*len(completed)/len(selected),page_count=count)
             for start,end in chunks:part(start,end)
             cancelled(cancel_event)
+            if not selected_set-set(failed):
+                error=RuntimeError('No selected PDF page could be processed; the original document was preserved.')
+                error.code='document_no_translated_pages'
+                raise error
+            ensure_body(quality)
             if toc:assembled.set_toc(toc)
             # Copy original cross-part destinations which cannot survive
             # extraction into an independently typeset part.
@@ -216,5 +261,7 @@ def run_document(source,folder,payload,single,bridge=None,progress=None,cancel_e
             if result.page_count!=output_count:raise ValueError('Native assembled page alignment failed')
         if collector is not None:collector.update(exportPages=sorted(export,key=lambda p:p['index']),failedPages=sorted(failed),batched=True,
             artifactFile=save_manifest(checkpoint,source_file,sorted(selected_set-set(failed)),count,reflow_parts))
+        if collector is not None and quality is not None:
+            collector['textQuality']=quality.copy();collector['failedPages']=sorted(set(failed+quality['unreadablePages']))
         if progress:progress(type='validated',page_count=output_count,completed_pages=len(completed),total_pages=len(selected),overall_progress=100)
         return [],destination if payload.get('outputFile') else destination.read_bytes()

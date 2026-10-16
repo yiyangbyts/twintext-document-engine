@@ -7,6 +7,38 @@ from document_preview import PreviewStream,read_frame,write_frame,preview_failur
 from service import Jobs
 
 class PreviewTests(unittest.TestCase):
+    def test_scan_preview_preserves_pending_pixels_and_clips_native_replacement(self):
+        import pymupdf
+        from document_preview import compose_scan_preview
+        with pymupdf.open() as source,pymupdf.open() as rendered:
+            page=source.new_page(width=400,height=600);page.insert_text((30,80),'Pending source paragraph stays readable.')
+            page.insert_text((30,280),'Original completed paragraph.')
+            page=rendered.new_page(width=400,height=600)
+            page.draw_rect(page.rect,color=None,fill=(1,1,1))
+            page.insert_text((30,280),'Translated paragraph.')
+            # Renderer has cleared pending text; composition must preserve it.
+            before=source[0].get_pixmap().samples
+            box=SimpleNamespace(x=20,y=300,x2=380,y2=340);crop=SimpleNamespace(x=0,y2=600)
+            page=compose_scan_preview(source,rendered,0,[box],crop)
+            pix=page.get_pixmap();after=pix.samples;stride=pix.stride
+            self.assertEqual(before[:200*stride],after[:200*stride])
+            self.assertNotEqual(before,after)
+            self.assertIn('Pending source paragraph',page.get_text())
+    def test_only_changed_paragraphs_are_composited_over_scan(self):
+        stream=PreviewStream(lambda event:None);p=SimpleNamespace(unicode='original')
+        stream.pages[0]=SimpleNamespace(pdf_paragraph=[deepcopy(p)],page_number=0);stream.completed[0]=set();stream.locations[id(p)]=(0,0)
+        stream.completed_paragraph(p);self.assertEqual(stream.first[0]['changedParagraphs'],[])
+        p.unicode='translation';stream.completed_paragraph(p)
+        self.assertEqual(stream.pending[0]['changedParagraphs'],[0])
+    def test_scanned_page_mask_flag_survives_worker_transport(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);config,launch=self.worker_fixture(root,'normal');config.ocr_workaround=True
+            stream=PreviewStream(lambda event:None)
+            with launch:
+                try:
+                    stream.start(config)
+                    self.assertTrue(stream.worker_options['ocrWorkaround'])
+                finally:stream.finish()
     def test_global_failures_are_not_retried_as_broken_pages(self):
         import errno
         from service import failure_code
@@ -228,7 +260,7 @@ class PreviewTests(unittest.TestCase):
         paragraph.unicode='merged baseline';stream.completed_paragraph(paragraph,preserve_source=True)
         self.assertEqual(stream.first[0]['page'].pdf_paragraph[0].unicode,'source references')
         stream.reference_updated(0,[{'id':'entry-1','translated':True}])
-        self.assertEqual(stream.pending[0]['references'][0]['id'],'entry-1')
+        self.assertEqual(stream._snapshot(0,stream.pending[0])['references'][0]['id'],'entry-1')
         self.assertEqual(paragraph.unicode,'merged baseline')
     def test_appearance_reuses_completed_snapshot_without_mutating_glyphs(self):
         paragraph=SimpleNamespace(unicode='translated')
@@ -237,7 +269,64 @@ class PreviewTests(unittest.TestCase):
         self.assertEqual(stream.first[0]['documentOptions'],{'fontFamily':'sans','fontScale':120})
         self.assertEqual(paragraph.unicode,'translated')
         stream.set_options({'fontFamily':'serif'})
-        self.assertEqual(stream.pending[0]['documentOptions']['fontFamily'],'serif')
+        self.assertEqual(stream._snapshot(0,stream.pending[0])['documentOptions']['fontFamily'],'serif')
+    def test_memory_pressure_defers_optional_preview_without_copying_or_cancelling_translation(self):
+        events=[];stream=PreviewStream(events.append)
+        config=SimpleNamespace(twintext_resources=SimpleNamespace(pressured=lambda:True))
+        with patch('document_preview.subprocess.Popen',side_effect=AssertionError('Must not launch under pressure')):
+            stream.start(config)
+            stream.prepare(SimpleNamespace(page=[object()]),config)
+        self.assertFalse(stream.started);self.assertFalse(stream.pages)
+        self.assertTrue(events[-1]['memoryDeferred']);self.assertEqual(events[-1]['state'],'deferred-memory')
+    def test_normal_font_residency_does_not_disable_preview_and_renderer_retires_after_translation(self):
+        from resource_budget import ResourceBudget,MIB
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);config,launch=self.worker_fixture(root,'normal');events=[]
+            value=dict(rssBytes=2400*MIB,privateBytes=3000*MIB,childRSSBytes=1000*MIB,availableBytes=6*1024*MIB)
+            config.twintext_resources=ResourceBudget(sample=lambda:dict(value))
+            paragraphs=[SimpleNamespace(unicode='source') for _ in range(200)]
+            document=SimpleNamespace(page=[SimpleNamespace(page_number=0,pdf_paragraph=paragraphs)],total_pages=1)
+            stream=PreviewStream(events.append)
+            with launch:
+                try:
+                    stream.set_options({'fontScale':120})
+                    stream.prepare(document,config)
+                    self.assertEqual(stream.worker_options['documentOptions']['fontScale'],120)
+                    for paragraph in paragraphs:paragraph.unicode='translated';stream.completed_paragraph(paragraph)
+                    stream.seal()
+                    self.wait_for(lambda:any(e.get('state')=='drained' for e in events))
+                    frames=[e for e in events if e['type']=='native-page-preview']
+                    self.assertEqual(frames[0]['completedParagraphs'],1)
+                    self.assertEqual(frames[-1]['completedParagraphs'],200)
+                    self.assertIsNotNone(stream.process.returncode)
+                    self.assertFalse(stream.memory_deferred);self.assertFalse(stream.pages)
+                    self.assertTrue(all(p.unicode=='translated' for p in paragraphs))
+                finally:stream.finish()
+
+    def test_preview_is_not_spawned_during_pdf_parsing(self):
+        from document_preview import paragraph_previews
+        config=SimpleNamespace(progress_monitor=SimpleNamespace(cancel_event=threading.Event()))
+        with patch.object(PreviewStream,'start') as start:
+            with paragraph_previews(config,lambda event:None) as stream:
+                stream.set_current_page(3);stream.set_options({'fontScale':120})
+                self.assertFalse(stream.started);self.assertEqual(stream.current_page,3)
+            start.assert_not_called()
+
+    def test_hundreds_of_updates_copy_only_first_frame_until_worker_consumes_latest(self):
+        paragraphs=[SimpleNamespace(unicode='source') for _ in range(200)]
+        stream=PreviewStream(lambda event:None,0)
+        stream.pages[0]=SimpleNamespace(page_number=0,pdf_paragraph=deepcopy(paragraphs))
+        stream.completed[0]=set();stream.locations={id(p):(0,i) for i,p in enumerate(paragraphs)}
+        for p in paragraphs:p.unicode='translated';stream.completed_paragraph(p)
+        self.assertEqual(stream.snapshot_count,1)
+        self.assertEqual(stream.update_count,200)
+        self.assertNotIn('page',stream.pending[0])
+        latest=stream._snapshot(0,stream.pending[0])
+        self.assertEqual(latest['completedParagraphs'],200)
+        self.assertEqual(stream.first[0]['completedParagraphs'],1)
+        latest['page'].pdf_paragraph[0].unicode='renderer mutation'
+        self.assertEqual(stream.pages[0].pdf_paragraph[0].unicode,'translated')
+
     def test_cursor_returns_latest_page_only_and_terminal_release_frees_result(self):
         jobs=Jobs('babeldoc','model')
         try:

@@ -1,7 +1,7 @@
 """Large-document, resume and fault-isolation regression tests.
 Copyright (C) 2026 TwinText. SPDX-License-Identifier: AGPL-3.0-only
 """
-import base64, tempfile, threading, unittest
+import base64, tempfile, threading, unittest, weakref
 from pathlib import Path
 import pymupdf
 from native_batches import run_document, digest,page_limit
@@ -54,6 +54,33 @@ class BatchTests(unittest.TestCase):
         self.assertEqual(collector['failedPages'],[70]);self.assertLessEqual(max(self.calls),8)
         with pymupdf.open(output) as doc:
             self.assertNotIn('Translated paragraph',doc[70].get_text());self.assertIn('Translated paragraph',doc[304].get_text())
+    def test_all_failed_pages_are_an_explicit_failure_not_a_completed_source_pdf(self):
+        self.single=lambda *args:(_ for _ in ()).throw(ValueError('no extractable paragraphs'))
+        with self.assertRaises(RuntimeError) as caught:self.run_batch(pages='1-3')
+        self.assertEqual(caught.exception.code,'document_no_translated_pages')
+        self.assertFalse((self.root/'result.pdf').exists())
+    def test_successful_typesetting_with_no_body_requests_is_not_completion(self):
+        from pdf_text_quality import state
+        with self.assertRaises(RuntimeError) as caught:self.run_batch(pages='1-3',_textQuality=state())
+        self.assertEqual(caught.exception.code,'document_no_body_text')
+        self.assertFalse((self.root/'result.pdf').exists())
+    def test_single_page_memory_failure_is_not_misclassified_as_document_content(self):
+        self.single=lambda *args:(_ for _ in ()).throw(MemoryError('exhausted'))
+        with self.assertRaises(MemoryError):self.run_batch(pages='1-3')
+    def test_split_releases_the_failed_parser_traceback_before_retry(self):
+        class LargeParserState:pass
+        retained=[];normal=self.single
+        def failing(data,*args):
+            self.assertTrue(all(value() is None for value in retained))
+            with pymupdf.open(stream=data,filetype='pdf') as doc:
+                if doc.page_count>8:
+                    state=LargeParserState();retained.append(weakref.ref(state))
+                    raise MemoryError('Release this parser before retrying')
+            return normal(data,*args)
+        self.single=failing
+        (_,output),collector,_=self.run_batch(pages='1-16')
+        self.assertEqual(self.calls,[8,8]);self.assertEqual(collector['failedPages'],[])
+
     def test_fatal_model_failure_is_not_repeated_per_page(self):
         count=0
         def failed(*args):
@@ -109,6 +136,16 @@ class BatchTests(unittest.TestCase):
         with patch('native_batches.available_memory',return_value=1*1024**3):self.assertEqual(page_limit(1000,{}),1)
         self.assertEqual(page_limit(1000,{'batchPages':2}),2)
         with self.assertRaises(ValueError):page_limit(1000,{'batchPages':True})
+    def test_warmup_budget_rechecks_remaining_work_and_prioritizes_the_viewed_page(self):
+        class Budget:
+            current={'rssBytes':0};warmed=False
+            def batch_pages(self,average,ceiling):return min(ceiling,4 if self.warmed else 1)
+            def completed_batch(self,pages,before):self.warmed=True
+        (_,output),collector,events=self.run_batch(_resourceBudget=Budget())
+        self.assertEqual(self.calls[0],1);self.assertEqual(max(self.calls),4)
+        self.assertEqual(sum(self.calls),305);self.assertEqual(events[0]['pageIndex'],152)
+        self.assertEqual(collector['failedPages'],[])
+        with pymupdf.open(output) as doc:self.assertEqual(doc.page_count,305)
     def test_same_stage_progress_updates_are_delivered(self):
         def single(pdf,folder,payload,bridge,progress,*args,**kw):
             for n in range(3):progress(stage='translating',stage_current=n,stage_total=3,page_count=1)

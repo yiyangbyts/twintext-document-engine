@@ -152,6 +152,22 @@ class Tests(unittest.TestCase):
                 self.assertEqual(jobs.snapshot(key)['state'],'complete')
                 self.assertEqual(jobs.snapshot(key)['requests'],[])
         finally:jobs.pool.shutdown(wait=True)
+    def test_incremental_single_batch_keeps_text_exports_and_persistent_reflow(self):
+        jobs=Jobs('babeldoc','.')
+        pages=[{'index':0,'blocks':[{'source':'Body','translation':'译文','kind':'paragraph'}]}]
+        def native(pdf,folder,payload,bridge,progress,cancel_event,**kwargs):
+            kwargs['collector'].update(snapshotFile='private-temp.il.gz',exportPages=pages,artifactFile='persistent/reflow.json')
+            progress(type='validated',page_count=1)
+            return [],b'%PDF-complete'
+        try:
+            with patch('babel_adapter.run',native):
+                key=jobs.submit({'pdf':base64.b64encode(b'%PDF-fixture').decode(),'nativeExport':True,'documentExport':True})
+                jobs.pool.shutdown(wait=True)
+            result=jobs.result(key)
+            self.assertEqual(result['exportPages'],pages)
+            self.assertEqual(result['artifactFile'],'persistent/reflow.json')
+            self.assertEqual(result['failedPages'],[])
+        finally:jobs.pool.shutdown(wait=True)
     def test_babel_il(self):
         document={'page':[{'mediabox':{'box':{'x':0,'y':0,'x2':100,'y2':200}},'pdfParagraph':[{'box':{'x':10,'y':100,'x2':90,'y2':150},'unicode':'source','pdfParagraphComposition':[{'pdfFormula':{'box':{'x':20,'y':120,'x2':40,'y2':130},'pdfCharacter':[{'charUnicode':'x'},{'charUnicode':'='}]}}]}]}]}
         regions=il_regions(document);self.assertEqual(regions[1]['latex'],'x=');self.assertEqual(regions[0]['rect'],[.1,.25,.8,.25])

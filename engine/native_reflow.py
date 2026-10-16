@@ -59,11 +59,16 @@ def decode(value,registry):
 
 def save_part(artifact,path,first,last):
     from native_batches import digest
-    if not artifact or 'document' not in artifact:return None
+    if not artifact:return None
     temporary=path.with_suffix('.tmp')
     try:
-        raw=json.dumps(encode(artifact),separators=(',',':'),ensure_ascii=False).encode()
-        with gzip.open(temporary,'wb',compresslevel=1) as stream:stream.write(raw)
+        if artifact.get('snapshotFile'):
+            from native_snapshot import persist
+            persist(artifact['snapshotFile'],path)
+            return dict(first=first,last=last,path=path.name,sha256=digest(path))
+        if 'document' not in artifact:return None
+        from native_snapshot import write_typed
+        with gzip.open(temporary,'wb',compresslevel=1) as stream:write_typed(stream,artifact)
         temporary.replace(path)
         return dict(first=first,last=last,path=path.name,sha256=digest(path))
     except Exception as error:
@@ -102,7 +107,12 @@ def load_manifest(path):
 
 @lru_cache(maxsize=1)
 def _decoded_part(path,size,mtime,ctime):
-    with gzip.open(path,'rb') as stream:artifact=decode(json.load(stream),classes())
+    with gzip.open(path,'rb') as stream:incremental=stream.read(21).startswith(b'{"snapshotSchema":2,')
+    if incremental:
+        from native_snapshot import load
+        artifact=load(path)
+    else:
+        with gzip.open(path,'rb') as stream:artifact=decode(json.load(stream),classes())
     if len(artifact['document'].page)>16:raise ValueError('Invalid reflow size')
     return artifact
 
@@ -124,16 +134,22 @@ def focus_preview(artifact,folder,index,raw,cancel):
         folder.mkdir(parents=True,exist_ok=True)
         source=folder/'source.pdf';source.write_bytes(artifact.get('canonicalSource',artifact['source']))
         prepared=folder/'prepared.pdf';prepared.write_bytes(artifact['prepared'])
+        visual=source
+        if artifact.get('scanPages') and artifact.get('visualSource',artifact['source'])!=artifact.get('canonicalSource',artifact['source']):
+            visual=folder/'visual-source.pdf';visual.write_bytes(artifact.get('visualSource',artifact['source']))
         with pymupdf.open(stream=artifact['source'],filetype='pdf') as pdf:rotations={p.number:p.rotation for p in pdf}
         renderer=SnapshotRenderer(dict(source=str(source),prepared=str(prepared),root=str(folder/'work'),
             langIn=artifact['langIn'],langOut=artifact['langOut'],documentOptions=raw,
             originalRotations=rotations,contentRotations=artifact.get('contentRotations',{}),preservedRegions=artifact['preserved']),cancel)
+        renderer.config.twintext_visual_source=visual
+        renderer.config.ocr_workaround=artifact.get('ocrWorkaround',False)
+        renderer.config.twintext_scan_pages=set(artifact.get('scanPages',[]))
         _visible_cache=(key,renderer)
     renderer=_visible_cache[1];renderer.config.progress_monitor=QuietProgress(cancel)
     page=copy.deepcopy(next(p for p in artifact['document'].page if p.page_number==index))
     page.pdf_paragraph=[p for p in page.pdf_paragraph if p.debug_id not in artifact['preserved_ids']]
     return renderer.render(dict(page=page,pageCount=artifact['pageCount'],references=copy.deepcopy(artifact['references'].get(index,[])),
-        revision=1,paragraphs=[],completedParagraphs=len(page.pdf_paragraph),totalParagraphs=len(page.pdf_paragraph),documentOptions=raw))
+        revision=1,paragraphs=[],changedParagraphs=[] if index in artifact.get('nonTextPages',[]) else list(range(len(page.pdf_paragraph))),completedParagraphs=len(page.pdf_paragraph),totalParagraphs=len(page.pdf_paragraph),documentOptions=raw))
 
 
 def run(payload,folder,cancel,on_preview=None):

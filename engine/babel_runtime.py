@@ -7,8 +7,27 @@ _model=None
 _asset_key=None
 
 def _load():
-    from babeldoc.docvision.doclayout import DocLayoutModel
-    return DocLayoutModel.load_onnx()
+    from babeldoc.docvision import doclayout
+    providers=doclayout.onnxruntime.get_available_providers()
+    if doclayout.os_name=='Darwin' and any(p.lower().startswith('coreml') for p in providers):
+        # Keep upstream's static-shape rewrite and CoreML acceleration intact.
+        return doclayout.DocLayoutModel.load_onnx()
+    return _load_cpu(doclayout,providers)
+
+def _load_cpu(module,providers):
+    # ORT accepts a filename. The upstream CPU constructor also holds a full
+    # ONNX protobuf and serialized bytes during session creation. Neither copy
+    # is needed: metadata is available from the identical loaded session.
+    import ast
+    model=module.OnnxModel.__new__(module.OnnxModel)
+    model.model_path=module.get_doclayout_onnx_model_path()
+    model.model=module.onnxruntime.InferenceSession(str(model.model_path),
+        providers=[p for p in providers if p.lower().startswith('cpu')])
+    metadata=model.model.get_modelmeta().custom_metadata_map
+    model._stride=ast.literal_eval(metadata['stride'])
+    model._names=ast.literal_eval(metadata['names'])
+    model.lock=threading.Lock()
+    return model
 
 def layout_model():
     # Service startup warms the model. Translation tasks and page recovery
