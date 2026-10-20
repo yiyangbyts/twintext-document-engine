@@ -14,7 +14,14 @@ The current concurrency/format/view controls remain available for incremental us
   `nativeExport: true`, `documentExport: true`, optional `pages: "1-12"`,
   `sourceLanguage`, `targetLanguage`, `currentPage` (zero-based), `concurrency`.
   `documentOptions` contains fontScale/lineHeightScale percentages, fontFamily
-  (serif/sans), ignoreReferences and ignoreHeadersFooters booleans. Optional
+  (serif/sans), ignoreReferences and ignoreHeadersFooters booleans.
+  preserveRichText defaults to true: paired style markers use the plain-text
+  relay, with formula placeholders protected independently. translateFigureTableText
+  defaults to false: native selectable figure labels and table cells stay original;
+  true translates them as separate physical rows/cells. Captions are ordinary
+  translatable text in both modes; raster image text requires separate OCR.
+  These two translation options are fixed when starting a job; /format changes
+  typography only. Optional
   clientJobId is 32 hexadecimal characters; exact retries are idempotent.
 - `GET /v1/jobs/{id}?after={cursor}&metadata=1`: state queued/running/complete/error,
   progress, timing, requests, previews and warnings. Preview PNG/PDF frames contain

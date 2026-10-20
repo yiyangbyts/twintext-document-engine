@@ -85,6 +85,7 @@ def _run_single(pdf,folder,payload,bridge=None,progress=None,cancel_event=None,o
         only_include_translated_page=bridge is None or payload.get('pageIsolation') is True)
     from page_geometry import normalize
     config.twintext_resources=payload.get('_resourceBudget')
+    config.twintext_translation_context=translation_context
     config.twintext_incremental_snapshots=payload.get('_incrementalSnapshots',False)
     config.twintext_original_source=folder/'original-source.pdf'
     config.twintext_original_source.write_bytes(pdf)

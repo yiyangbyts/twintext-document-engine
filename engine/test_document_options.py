@@ -35,5 +35,11 @@ class FormatTests(unittest.TestCase):
         self.assertEqual(options({'fontScale':True,'lineHeightScale':999,'fontFamily':'arbitrary'})['fontScale'],1)
         self.assertEqual(options({'lineHeightScale':999})['lineHeightScale'],1.8)
         self.assertEqual(options({'fontFamily':'sans'})['fontFamily'],'sans-serif')
+    def test_translation_controls_have_independent_defaults(self):
+        self.assertTrue(options({})['preserveRichText'])
+        self.assertFalse(options({})['translateFigureTableText'])
+        self.assertFalse(options({'preserveRichText':False})['preserveRichText'])
+        self.assertTrue(options({'translateFigureTableText':True})['translateFigureTableText'])
+        self.assertFalse(options({'translateFigureTableText':'true'})['translateFigureTableText'])
 
 if __name__=='__main__':unittest.main()

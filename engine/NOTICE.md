@@ -4,6 +4,8 @@ Based on [BabelDOC 0.6.4](https://github.com/funstory-ai/BabelDOC/tree/v0.6.4), 
 
 Copyright (C) 2026 TwinText, for adapter modifications through 2026-10-08: native PDF reconstruction; runtime and temporary workspace compatibility; reference, list and contents preservation; rotated-page geometry; paragraph previews and typography reflow; ignored/preserved regions; translation retries, cancellation, page recovery and artifact lifetime; file-backed PDF transport, bounded native batches, resumable part checkpoints separation of part completion from user cancellation; persistent bounded IL checkpoints, visible-page-first local typography reflow and superseded-job cancellation. Additional changes cover sideways content without PDF rotation metadata, original-frame restoration, cached raster typography previews, unique preview streams and ASCII-safe installation progress. These changes include subclasses and runtime patches within the Python process.
 
+Changes dated 2026-10-20 enable paired rich-style placeholders through the validated plain-text relay and add opt-in translation of native figure labels and table cells. Captions and formula protection remain independent; disabled graphic text retains its source glyphs.
+
 Version 2.0.15 restores PDF parsing, translation and native PDF presentation to the 2.0.11 implementation. The subsequent structured reading layer and unresolved-fragment relay extensions are removed. Native typography reflow and bounded batch recovery remain available.
 
 Version 2.0.13 adds measured asset source selection, bounded parallel downloads, range resume, slow-source failover and pinned digest verification.
