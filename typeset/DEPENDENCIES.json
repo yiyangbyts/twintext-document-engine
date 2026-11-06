@@ -1,0 +1,10 @@
+{
+  "schema": 2,
+  "runtime": "Zotero 9–10.9.9: JavaScript, reader PDF.js, DOM Canvas, ChromeWorker, CompressionStream",
+  "bundled": {
+    "onnxruntime-web": "1.30.0",
+    "doclayout": "docstructbench u8",
+    "fonts": "13 OFL font files"
+  },
+  "externalExecutables": []
+}

@@ -1,0 +1,233 @@
+{
+  "version": "2.2.17-public.1",
+  "files": [
+    {
+      "path": "API.md",
+      "sha256": "8770ed7734bf7d99b8f54717457fd34197b71a0e314fe3f5c515aa77dbe6cbf4"
+    },
+    {
+      "path": "ASSETS.json",
+      "sha256": "06bb9b97dc072258ae7a1fe4d3aa3ee12d1d42a8025b2fdbebb40980fe4dfb2d"
+    },
+    {
+      "path": "DEPENDENCIES.json",
+      "sha256": "ef7afafe41460c21f8d5e3d57732713aea202d42626737cab039c443d0b81a1a"
+    },
+    {
+      "path": "LICENSE.txt",
+      "sha256": "afca41723b45e26069f68d485bf906a202f892f90c801d3052f8e6296bb41454"
+    },
+    {
+      "path": "NOTICE.md",
+      "sha256": "bd0400854730f7d77f4261c6b08150a55d2e8518edc15bd3360ad3f38a9e0dc2"
+    },
+    {
+      "path": "README.md",
+      "sha256": "7568f8f9f7cb12dc3a71df1686a9cd9d84742447e09c6a9979fd1ed0012d517c"
+    },
+    {
+      "path": "adapters/zotero/io-worker.js",
+      "sha256": "9c0e9f2a51200c8269a0445a8d528cd10df97a423354f4e96c49fffda0a4bd72"
+    },
+    {
+      "path": "adapters/zotero/io.js",
+      "sha256": "778d3dcfb2c128245211e4cdd16c83e227d8c08812c72d952093afb9ead7e11a"
+    },
+    {
+      "path": "adapters/zotero/layout-pool.js",
+      "sha256": "36bbe08d841a9db971a7e875e766bd906f35be08bd2a1941d3a61186191015a9"
+    },
+    {
+      "path": "adapters/zotero/layout-worker.js",
+      "sha256": "16681660d44f409284064d7dc28cb7ee55e25f803f21f6dbc485d2d31e850b3e"
+    },
+    {
+      "path": "assets/fonts/LXGWWenKaiGB-Regular.1.520.ttf",
+      "sha256": "252cde5857f7ce57ce76f7e2e1d2e91c1f912f1f4c13c7e4fb295b5fdf5923ed"
+    },
+    {
+      "path": "assets/fonts/NotoSans-Bold.ttf",
+      "sha256": "379bda1de5ceb6c81a6e0b7f8346d36e12b3202757fcba90a42dc5a7f8d5df38"
+    },
+    {
+      "path": "assets/fonts/NotoSans-BoldItalic.ttf",
+      "sha256": "7c53c6334c7f7847201ba6ed93e4e00088b2ffae613aef69fb581153f347cac2"
+    },
+    {
+      "path": "assets/fonts/NotoSans-Italic.ttf",
+      "sha256": "feb3e57888ce3acb604f270c278cfb304c674306518771619ddbdefca42a066b"
+    },
+    {
+      "path": "assets/fonts/NotoSans-Regular.ttf",
+      "sha256": "fe8c022f48d8dd29f17b744d16f9346f4357e16f7d4f7be58b000ae7c291b614"
+    },
+    {
+      "path": "assets/fonts/NotoSerif-Bold.ttf",
+      "sha256": "2015eba9ca7ca5cf7320bd5e6740439f84b55eefad7208e63b9b6d32e8c82410"
+    },
+    {
+      "path": "assets/fonts/NotoSerif-BoldItalic.ttf",
+      "sha256": "c49e9f86cc43e05e8e5e8da53a7e00568fac08e2afb93b0d7979a2ea94fd6171"
+    },
+    {
+      "path": "assets/fonts/NotoSerif-Italic.ttf",
+      "sha256": "be429bb62448b615f62cf7817d6a801fbc209e6cd2c11ffa15801f6d7dfac7cf"
+    },
+    {
+      "path": "assets/fonts/NotoSerif-Regular.ttf",
+      "sha256": "76b746ed54a2f83fa41db9a85a43b4b39900dbdb8ae40ec3d93950b0b00c4bd7"
+    },
+    {
+      "path": "assets/fonts/SourceHanSansCN-Bold.ttf",
+      "sha256": "2dcaecc0dcba896fdc48e32617633123d91fa80c7eb9f7ae7c836da70e45ce88"
+    },
+    {
+      "path": "assets/fonts/SourceHanSansCN-Regular.ttf",
+      "sha256": "dd4ae04ab7d33f43202750cf755b2ba47a2122ba41412954e562da459337bbf6"
+    },
+    {
+      "path": "assets/fonts/SourceHanSerifCN-Bold.ttf",
+      "sha256": "fafd6dc09a0ba3be1ac224aec3ff0befab97964c4ffba6b16f789702106577aa"
+    },
+    {
+      "path": "assets/fonts/SourceHanSerifCN-Regular.ttf",
+      "sha256": "8ba5ec09db04b1d1599edeff3fb5627ca11eaaf85e339e5c32684cb94e806993"
+    },
+    {
+      "path": "assets/models/doclayout_yolo_docstructbench_imgsz1024_u8.onnx",
+      "sha256": "5917c3b7c2c6de36da915aaa9ac28c58d50207f953ce37329ad118f677867375"
+    },
+    {
+      "path": "build-source.py",
+      "sha256": "c5ba5c98325e68e80f69c1d5a7818c1d779574c4cacee74503262908b446e6d2"
+    },
+    {
+      "path": "core/char-parser.js",
+      "sha256": "4597fedbcdd7102a65e93fa2972ca37ef7e540417c063e441364d3049418205e"
+    },
+    {
+      "path": "core/content-stream.js",
+      "sha256": "9c7b5637e68795796a2c11c6ac9d88f031add9860ba228ab5726ed7878bd9e5c"
+    },
+    {
+      "path": "core/engine.js",
+      "sha256": "2eeeafa82ac323b3e93f42671c655c665406bf63d6d0cbc08d5bdb79c03a9444"
+    },
+    {
+      "path": "core/font-data.js",
+      "sha256": "f3cbdad9ffa3b01caa01c2f83593ab6550a6b39cdc9619461054e64b3534ed09"
+    },
+    {
+      "path": "core/fonts.js",
+      "sha256": "aa048e10504e25333eafeac1fe5ede388819dcfeb95c2d547ec77771e2bb7658"
+    },
+    {
+      "path": "core/layout-model.js",
+      "sha256": "71508348bc824e9a49fcd1874285b1dc83148173cbfd95d531fab58f42d38c71"
+    },
+    {
+      "path": "core/pdf-normalize.js",
+      "sha256": "91e4adfe86add27780da604498624940875a2150c186bb36f4a3b6726f40a997"
+    },
+    {
+      "path": "core/pdf-objects.js",
+      "sha256": "72e9401c44a4e178416576ecdfed3520404a8c21694cf3317f426cab565e6566"
+    },
+    {
+      "path": "core/pdf-writer.js",
+      "sha256": "eea22198e1012db70453f4f657f5b4d80b89682b3b52347069c3066ca1ae5a08"
+    },
+    {
+      "path": "core/structure.js",
+      "sha256": "2cdfff75592493c871bc0bfde77c80d08757f06ced3d7019257777ec98500110"
+    },
+    {
+      "path": "core/translator.js",
+      "sha256": "1f4f6b358f63615076739105675622260d3f67be6906c3c43ecf7271c382f5a0"
+    },
+    {
+      "path": "core/typesetting.js",
+      "sha256": "7bd97d3b7ef1146a8b4742cbde9720f508771972f5a60df7d0ffd8bb7bdca2bd"
+    },
+    {
+      "path": "licenses/AGPL-3.0.txt",
+      "sha256": "afca41723b45e26069f68d485bf906a202f892f90c801d3052f8e6296bb41454"
+    },
+    {
+      "path": "licenses/APACHE-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "licenses/typeset-fonts.md",
+      "sha256": "c5de7de356282166d3f11d78c6f72c034c2c953bbf1ee99ff4af090a84c2af0c"
+    },
+    {
+      "path": "licenses/upstream/Adobe-CMap-LICENSE.txt",
+      "sha256": "742665db9c8e1bc72603c6d319ca3e90b83bd6d95202f0cd4ef11068a07a9c29"
+    },
+    {
+      "path": "licenses/upstream/DocLayout-ONNX-MODEL-CARD.md",
+      "sha256": "ef30e30b57e315278703ddd7baf813df88f1594e2f4c0a8b2696a326a9ce8ad8"
+    },
+    {
+      "path": "licenses/upstream/OFL-1.1.txt",
+      "sha256": "0dab92d0544f7b233403f14b84a663bdbfa746982eda629e7f4f9ffe1b036feb"
+    },
+    {
+      "path": "licenses/upstream/SourceHanSans-LICENSE.txt",
+      "sha256": "fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2"
+    },
+    {
+      "path": "licenses/upstream/SourceHanSerif-LICENSE.txt",
+      "sha256": "9ff5bb567e1b92c801fc1069e5fbf992ff8efccacb9db94e5959a5b3ba9bb903"
+    },
+    {
+      "path": "package.json",
+      "sha256": "2a3cc9356c9b810524918ef3e1ebaafe8dd6a641c533c3eafdea41a6d980c00f"
+    },
+    {
+      "path": "pipeline.js",
+      "sha256": "1a99cbaeed865679c10b7632f56d75082720fd4e2636ea6dd0f2a6e4c0fa763f"
+    },
+    {
+      "path": "runtime.json",
+      "sha256": "618777d0a559b1fd7c6cdbd02cebf621275c992332fb73b353d33433a85d6b9a"
+    },
+    {
+      "path": "test/integration.cjs",
+      "sha256": "2962ca8977f2265e45658a5d8d25b903bd64f4dd07a4beab305b99d8195f59ef"
+    },
+    {
+      "path": "test/runtime.cjs",
+      "sha256": "e510191dce1a060005982d1f8d569585b3d6f403a110751c8ab26fee240cc926"
+    },
+    {
+      "path": "tools/gen_typeset_font_data.py",
+      "sha256": "de991a2d707c54fc2282b14896a1cbf575e0674a6a55374bf7a5fde20ff70c29"
+    },
+    {
+      "path": "tools/quantize_layout_model.py",
+      "sha256": "81750884fafd47e8a97c42ee19c568119b81761b59b32e696e4ddbd820ff1b5c"
+    },
+    {
+      "path": "vendor/ort/LICENSE-MIT",
+      "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+    },
+    {
+      "path": "vendor/ort/NOTICE.md",
+      "sha256": "cca98c597f27aeb31a5c6203c6320cf26ec6cf159502462ee37a4741d205fe75"
+    },
+    {
+      "path": "vendor/ort/ort-wasm-simd-threaded.mjs",
+      "sha256": "e13f7f94fc51b4ca72b12faeb1ee95f4ace6dfbc8939bc718aabdc0a27c4299b"
+    },
+    {
+      "path": "vendor/ort/ort-wasm-simd-threaded.wasm",
+      "sha256": "3398c10d07d229bd91b364548e130e0e51a8e5704b88c7c083ebbeb78842dee2"
+    },
+    {
+      "path": "vendor/ort/ort.wasm.min.js",
+      "sha256": "faece07e84faa9001f5104bbe4e5c70861d06cb2376a0dea1fa0ad33a67adc81"
+    }
+  ]
+}

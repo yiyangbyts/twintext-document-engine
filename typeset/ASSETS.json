@@ -1,0 +1,21 @@
+{
+  "assets/fonts/LXGWWenKaiGB-Regular.1.520.ttf": "252cde5857f7ce57ce76f7e2e1d2e91c1f912f1f4c13c7e4fb295b5fdf5923ed",
+  "assets/fonts/NotoSans-Bold.ttf": "379bda1de5ceb6c81a6e0b7f8346d36e12b3202757fcba90a42dc5a7f8d5df38",
+  "assets/fonts/NotoSans-BoldItalic.ttf": "7c53c6334c7f7847201ba6ed93e4e00088b2ffae613aef69fb581153f347cac2",
+  "assets/fonts/NotoSans-Italic.ttf": "feb3e57888ce3acb604f270c278cfb304c674306518771619ddbdefca42a066b",
+  "assets/fonts/NotoSans-Regular.ttf": "fe8c022f48d8dd29f17b744d16f9346f4357e16f7d4f7be58b000ae7c291b614",
+  "assets/fonts/NotoSerif-Bold.ttf": "2015eba9ca7ca5cf7320bd5e6740439f84b55eefad7208e63b9b6d32e8c82410",
+  "assets/fonts/NotoSerif-BoldItalic.ttf": "c49e9f86cc43e05e8e5e8da53a7e00568fac08e2afb93b0d7979a2ea94fd6171",
+  "assets/fonts/NotoSerif-Italic.ttf": "be429bb62448b615f62cf7817d6a801fbc209e6cd2c11ffa15801f6d7dfac7cf",
+  "assets/fonts/NotoSerif-Regular.ttf": "76b746ed54a2f83fa41db9a85a43b4b39900dbdb8ae40ec3d93950b0b00c4bd7",
+  "assets/fonts/SourceHanSansCN-Bold.ttf": "2dcaecc0dcba896fdc48e32617633123d91fa80c7eb9f7ae7c836da70e45ce88",
+  "assets/fonts/SourceHanSansCN-Regular.ttf": "dd4ae04ab7d33f43202750cf755b2ba47a2122ba41412954e562da459337bbf6",
+  "assets/fonts/SourceHanSerifCN-Bold.ttf": "fafd6dc09a0ba3be1ac224aec3ff0befab97964c4ffba6b16f789702106577aa",
+  "assets/fonts/SourceHanSerifCN-Regular.ttf": "8ba5ec09db04b1d1599edeff3fb5627ca11eaaf85e339e5c32684cb94e806993",
+  "vendor/ort/LICENSE-MIT": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
+  "vendor/ort/NOTICE.md": "cca98c597f27aeb31a5c6203c6320cf26ec6cf159502462ee37a4741d205fe75",
+  "vendor/ort/ort-wasm-simd-threaded.mjs": "e13f7f94fc51b4ca72b12faeb1ee95f4ace6dfbc8939bc718aabdc0a27c4299b",
+  "vendor/ort/ort-wasm-simd-threaded.wasm": "3398c10d07d229bd91b364548e130e0e51a8e5704b88c7c083ebbeb78842dee2",
+  "assets/models/doclayout_yolo_docstructbench_imgsz1024_u8.onnx": "5917c3b7c2c6de36da915aaa9ac28c58d50207f953ce37329ad118f677867375",
+  "vendor/ort/ort.wasm.min.js": "faece07e84faa9001f5104bbe4e5c70861d06cb2376a0dea1fa0ad33a67adc81"
+}
